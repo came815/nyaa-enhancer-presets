@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { buildExternalServiceLinkHtml, fetchUrlViaBackground, isSupportedAnimeViewPageCategory, repositionTsukihimeRowAfterNekoBT, setAnimetoshoTabStatus, switchDescriptionPanelTab } from "../../internal.js";
 
 // Lock to prevent concurrent nekoBT fetch calls
@@ -146,12 +147,12 @@ export function buildNekoBTMetaRow(label, valueHtml) {
 export function renderNekoBTPanelContent(data, prefs, langData) {
   const useFullLangNames = !!prefs.showNekoBTFullLangNames;
   const torrentUrl = `https://nekobt.to/torrents/${encodeURIComponent(data.id)}`;
-  const titleHtml = `<a href="${escapeNekoBTHtml(torrentUrl)}" rel="noopener noreferrer nofollow" target="_blank">${escapeNekoBTHtml(data.title || "View on nekoBT")}</a>`;
+  const titleHtml = `<a href="${escapeNekoBTHtml(torrentUrl)}" rel="noopener noreferrer nofollow" target="_blank">${escapeNekoBTHtml(data.title || t("View on nekoBT"))}</a>`;
 
   const uploader = data.uploader;
   const uploaderHtml = uploader
     ? `<a href="https://nekobt.to/users/${encodeURIComponent(uploader.id)}" rel="noopener noreferrer nofollow" target="_blank">${escapeNekoBTHtml(uploader.display_name || uploader.username)}</a>`
-    : "Anonymous";
+    : t("Anonymous");
 
   const group = data.groups?.[0];
   const groupHtml = group
@@ -166,52 +167,52 @@ export function renderNekoBTPanelContent(data, prefs, langData) {
   const flagsHtml = flags.length ? escapeNekoBTHtml(flags.join(", ")) : null;
 
   let meta = "";
-  meta += buildNekoBTMetaRow("Title", titleHtml);
-  meta += buildNekoBTMetaRow("Uploader", uploaderHtml);
-  if (groupHtml) meta += buildNekoBTMetaRow("Group", groupHtml);
+  meta += buildNekoBTMetaRow(t("Title"), titleHtml);
+  meta += buildNekoBTMetaRow(t("Uploader"), uploaderHtml);
+  if (groupHtml) meta += buildNekoBTMetaRow(t("Group"), groupHtml);
   meta += buildNekoBTMetaRow(
-    "Swarm",
+    t("Swarm"),
     `${escapeNekoBTHtml(data.seeders ?? "?")} seeders · ${escapeNekoBTHtml(data.leechers ?? "?")} leechers · ${escapeNekoBTHtml(data.completed ?? "?")} completed`,
   );
   meta += buildNekoBTMetaRow(
-    "Health",
+    t("Health"),
     data.torrent_health != null
       ? `${escapeNekoBTHtml(data.torrent_health)}%`
       : "—",
   );
   meta += buildNekoBTMetaRow(
-    "Size",
+    t("Size"),
     escapeNekoBTHtml(formatNekoBTBytes(data.filesize)),
   );
   meta += buildNekoBTMetaRow(
-    "Uploaded",
+    t("Uploaded"),
     escapeNekoBTHtml(formatNekoBTTimestamp(data.uploaded_at)),
   );
   meta += buildNekoBTMetaRow(
-    "Info hash",
+    t("Info hash"),
     `<code>${escapeNekoBTHtml(data.infohash || "")}</code>`,
   );
   meta += buildNekoBTMetaRow(
-    "Audio",
+    t("Audio"),
     escapeNekoBTHtml(
       formatNekoBTLangList(data.audio_lang, useFullLangNames, langData),
     ),
   );
   meta += buildNekoBTMetaRow(
-    "Subtitles",
+    t("Subtitles"),
     escapeNekoBTHtml(
       formatNekoBTLangList(data.sub_lang, useFullLangNames, langData),
     ),
   );
   if (data.fsub_lang) {
     meta += buildNekoBTMetaRow(
-      "Forced subs",
+      t("Forced subs"),
       escapeNekoBTHtml(
         formatNekoBTLangList(data.fsub_lang, useFullLangNames, langData),
       ),
     );
   }
-  if (flagsHtml) meta += buildNekoBTMetaRow("Tags", flagsHtml);
+  if (flagsHtml) meta += buildNekoBTMetaRow(t("Tags"), flagsHtml);
 
   const files = Array.isArray(data.files) ? data.files : [];
   const filesHtml = files.length
@@ -235,21 +236,21 @@ export function renderNekoBTPanelContent(data, prefs, langData) {
 
   const description = data.description?.trim();
   const descriptionHtml = description
-    ? `<div class="nyaa-enhancer-nekobt-block"><h4>Description</h4><div class="nyaa-enhancer-nekobt-markdown">${renderNekoBTSimpleMarkdown(description)}</div></div>`
+    ? `<div class="nyaa-enhancer-nekobt-block"><h4>${t("Description")}</h4><div class="nyaa-enhancer-nekobt-markdown">${renderNekoBTSimpleMarkdown(description)}</div></div>`
     : "";
 
   const mediainfo = data.mediainfo?.trim();
   const mediainfoHtml = mediainfo
-    ? `<div class="nyaa-enhancer-nekobt-block"><h4>MediaInfo</h4><pre class="nyaa-enhancer-nekobt-mediainfo">${escapeNekoBTHtml(mediainfo)}</pre></div>`
+    ? `<div class="nyaa-enhancer-nekobt-block"><h4>${t("MediaInfo")}</h4><pre class="nyaa-enhancer-nekobt-mediainfo">${escapeNekoBTHtml(mediainfo)}</pre></div>`
     : "";
 
   return `
     <div class="nyaa-enhancer-nekobt-content">
       <dl class="nyaa-enhancer-nekobt-meta">${meta}</dl>
-      ${filesHtml ? `<div class="nyaa-enhancer-nekobt-block"><h4>Files</h4>${filesHtml}</div>` : ""}
+      ${filesHtml ? `<div class="nyaa-enhancer-nekobt-block"><h4>${t("Files")}</h4>${filesHtml}</div>` : ""}
       ${descriptionHtml}
       ${mediainfoHtml}
-      ${screenshotsHtml ? `<div class="nyaa-enhancer-nekobt-block"><h4>Screenshots</h4>${screenshotsHtml}</div>` : ""}
+      ${screenshotsHtml ? `<div class="nyaa-enhancer-nekobt-block"><h4>${t("Screenshots")}</h4>${screenshotsHtml}</div>` : ""}
     </div>
   `;
 }
@@ -311,12 +312,12 @@ export async function updateNekoBTDescriptionSection() {
   const fetchId = ++nekobtSectionFetchId;
   ensureNekoBTDescriptionTab(panel);
   const nekobtBody = getOrCreateNekoBTPanelBody(panel);
-  setAnimetoshoTabStatus(nekobtBody, "Loading nekoBT data…");
+  setAnimetoshoTabStatus(nekobtBody, t("Loading nekoBT data…"));
 
   const infoHash = document.querySelector("kbd")?.textContent?.trim();
   if (!infoHash) {
     if (fetchId !== nekobtSectionFetchId) return;
-    setAnimetoshoTabStatus(nekobtBody, "Could not read info hash.");
+    setAnimetoshoTabStatus(nekobtBody, t("Could not read info hash."));
     return;
   }
 
@@ -324,7 +325,7 @@ export async function updateNekoBTDescriptionSection() {
   if (fetchId !== nekobtSectionFetchId) return;
 
   if (!torrentId) {
-    setAnimetoshoTabStatus(nekobtBody, "Not found on nekoBT.");
+    setAnimetoshoTabStatus(nekobtBody, t("Not found on nekoBT."));
     return;
   }
 
@@ -334,7 +335,7 @@ export async function updateNekoBTDescriptionSection() {
   if (!data) {
     setAnimetoshoTabStatus(
       nekobtBody,
-      "Failed to load nekoBT torrent details.",
+      t("Failed to load nekoBT torrent details."),
     );
     return;
   }
@@ -394,7 +395,7 @@ export async function addNekoBTToViewPage() {
       : null;
     const nekoBTContent = buildExternalServiceLinkHtml(
       nekoBTLink,
-      "Not found on nekoBT",
+      t("Not found on nekoBT"),
     );
 
     // If another row already claimed the info hash slot, append after the last of them.

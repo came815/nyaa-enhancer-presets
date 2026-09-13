@@ -31,3 +31,11 @@ The fork also improves narrow-screen toolbar wrapping, adds release attribution 
 - Enable the Chrome extension on `sukebei.nyaa.si` by adding the exact host to host permissions, both content-script matches, and module resource matches.
 - Retain the current site's origin for presets, navigation, and settings; add offline regression checks for the activation requirements and site routing.
 - Update installation guidance. License and upstream attribution are retained; live-site operation remains unverified.
+
+## Version 1.17.0 — 2026-09-14
+
+- Add Japanese as the initial Chrome interface language, with a persisted Japanese / English selector in the list, settings page, and extension popup. A successful change reloads only the current page; other tabs apply it on their next reload.
+- Translate extension controls, settings, help, notifications, loading states, and integration labels while preserving native site text, user input, external content, URL parameters, and stored option values. Historical upstream changelog text remains in English.
+- Add localization regression checks and refresh the Japanese usage screenshots and instructions. The GPL license, attribution, and corresponding-source release are retained.
+- Add a cancel control to ZIP and individual torrent-file batches, abort active body reads and queued requests, prevent concurrent batches, and bound each file request to 20 seconds. Cancellation keeps already saved individual files and suppresses unfinished ZIP output.
+- Preserve unchanged non-list link hrefs so native view-title extraction and settings navigation continue to work after preset initialization.

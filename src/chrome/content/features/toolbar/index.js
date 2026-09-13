@@ -1,5 +1,72 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { createProgressNotification, dismissProgressNotification, getSelectedVisibleMagnetUrls, getSelectedVisibleTorrentRows, getTitleFromRow, getVisibleTorrentDataRows, isNyaaTorrentDataRow, isTorrentRowHidden, removeLegacyTorrentListActionColumns, sanitizeFilename, sendAllVisibleTorrents, sendSelectedTorrents, setProgressNotificationStatus, showKeywordMonitorPopup, showKeywordSelectPopup, showNotification, showQuickFilterPopup, updateAllTorrentListLinkActions } from "../../internal.js";
+
+const DOWNLOAD_REQUEST_TIMEOUT_MS = 20_000;
+const DOWNLOAD_BATCH_DELAY_MS = 500;
+let activeDownloadBatch = null;
+
+function createCancelableDownloadProgress() {
+  const element = createProgressNotification();
+  element.classList.add("ne-download-progress");
+  element.setAttribute("role", "status");
+  element.setAttribute("aria-live", "polite");
+  const status = document.createElement("span");
+  status.className = "ne-download-progress__status";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "ne-download-progress__cancel";
+  cancel.textContent = t("Cancel download");
+  cancel.setAttribute("aria-label", t("Cancel download"));
+  element.append(status, cancel);
+  return { element, status, cancel };
+}
+
+function setDownloadProgress(progress, message) {
+  progress.status.textContent = message;
+}
+
+function waitForDownloadBatchDelay(batch) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(done, DOWNLOAD_BATCH_DELAY_MS);
+    const onAbort = () => done();
+    function done() {
+      clearTimeout(timer);
+      batch.controller.signal.removeEventListener("abort", onAbort);
+      resolve();
+    }
+    batch.controller.signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+async function fetchDownloadBlobWithTimeout(url, batch) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const abort = () => controller.abort();
+  batch.controller.signal.addEventListener("abort", abort, { once: true });
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, DOWNLOAD_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.blob();
+  } catch (error) {
+    if (timedOut) error.downloadTimedOut = true;
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    batch.controller.signal.removeEventListener("abort", abort);
+  }
+}
+
+function finishDownloadProgress(progress, kind, message) {
+  setProgressNotificationStatus(progress.element, kind);
+  progress.cancel.disabled = true;
+  setDownloadProgress(progress, message);
+  dismissProgressNotification(progress.element);
+}
 
 export async function addCopyButton() {
   const prefs = await loadStoredPreferences();
@@ -37,19 +104,19 @@ export async function addCopyButton() {
   const sendSelectedButton = document.createElement("button");
   sendSelectedButton.className = "copy-magnets-button send-batch-button";
   sendSelectedButton.type = "button";
-  sendSelectedButton.title = "Send Selected";
-  sendSelectedButton.setAttribute("aria-label", "Send Selected");
+  sendSelectedButton.title = t("Send Selected");
+  sendSelectedButton.setAttribute("aria-label", t("Send Selected"));
   sendSelectedButton.innerHTML =
-    '<i class="fa fa-cloud-upload" aria-hidden="true"></i><span class="ne-btn-label">Send</span>';
+    `<i class="fa fa-cloud-upload" aria-hidden="true"></i><span class="ne-btn-label">${t("Send")}</span>`;
   sendSelectedButton.addEventListener("click", sendSelectedTorrents);
 
   const sendAllButton = document.createElement("button");
   sendAllButton.className = "copy-magnets-button send-batch-button";
   sendAllButton.type = "button";
-  sendAllButton.title = "Send All";
-  sendAllButton.setAttribute("aria-label", "Send All");
+  sendAllButton.title = t("Send All");
+  sendAllButton.setAttribute("aria-label", t("Send All"));
   sendAllButton.innerHTML =
-    '<i class="fa fa-paper-plane ne-btn-icon-compact" aria-hidden="true"></i><span class="ne-btn-label">All</span>';
+    `<i class="fa fa-paper-plane ne-btn-icon-compact" aria-hidden="true"></i><span class="ne-btn-label">${t("All")}</span>`;
   sendAllButton.addEventListener("click", sendAllVisibleTorrents);
   if (!prefs.showSendButtons) {
     sendGroup.classList.add("nyaa-enhancer-toolbar__btn--hidden");
@@ -67,10 +134,10 @@ export async function addCopyButton() {
   const copyButton = document.createElement("button");
   copyButton.className = "copy-magnets-button";
   copyButton.type = "button";
-  copyButton.title = "Copy Selected";
-  copyButton.setAttribute("aria-label", "Copy Selected");
+  copyButton.title = t("Copy Selected");
+  copyButton.setAttribute("aria-label", t("Copy Selected"));
   copyButton.innerHTML =
-    '<i class="fa fa-copy" aria-hidden="true"></i><span class="ne-btn-label">Copy</span>';
+    `<i class="fa fa-copy" aria-hidden="true"></i><span class="ne-btn-label">${t("Copy")}</span>`;
   copyButton.addEventListener("click", copySelectedMagnets);
 
   // Create the "Copy All" button
@@ -78,10 +145,10 @@ export async function addCopyButton() {
   const copyAllButton = document.createElement("button");
   copyAllButton.className = "copy-magnets-button";
   copyAllButton.type = "button";
-  copyAllButton.title = "Copy All";
-  copyAllButton.setAttribute("aria-label", "Copy All");
+  copyAllButton.title = t("Copy All");
+  copyAllButton.setAttribute("aria-label", t("Copy All"));
   copyAllButton.innerHTML =
-    '<i class="fa fa-files-o ne-btn-icon-compact" aria-hidden="true"></i><span class="ne-btn-label">All</span>';
+    `<i class="fa fa-files-o ne-btn-icon-compact" aria-hidden="true"></i><span class="ne-btn-label">${t("All")}</span>`;
   copyAllButton.addEventListener("click", copyAllMagnets);
 
   // Create the "Download Selected" button
@@ -89,10 +156,10 @@ export async function addCopyButton() {
   const downloadButton = document.createElement("button");
   downloadButton.className = "copy-magnets-button download-button";
   downloadButton.type = "button";
-  downloadButton.title = "Download Selected";
-  downloadButton.setAttribute("aria-label", "Download Selected");
+  downloadButton.title = t("Download Selected");
+  downloadButton.setAttribute("aria-label", t("Download Selected"));
   downloadButton.innerHTML =
-    '<i class="fa fa-download" aria-hidden="true"></i><span class="ne-btn-label">Download</span>';
+    `<i class="fa fa-download" aria-hidden="true"></i><span class="ne-btn-label">${t("Download")}</span>`;
   downloadButton.addEventListener("click", downloadSelectedTorrents);
 
   // Create the "Download All" button
@@ -100,19 +167,19 @@ export async function addCopyButton() {
   const downloadAllButton = document.createElement("button");
   downloadAllButton.className = "copy-magnets-button download-button";
   downloadAllButton.type = "button";
-  downloadAllButton.title = "Download All";
-  downloadAllButton.setAttribute("aria-label", "Download All");
+  downloadAllButton.title = t("Download All");
+  downloadAllButton.setAttribute("aria-label", t("Download All"));
   downloadAllButton.innerHTML =
-    '<i class="fa fa-cloud-download ne-btn-icon-compact" aria-hidden="true"></i><span class="ne-btn-label">All</span>';
+    `<i class="fa fa-cloud-download ne-btn-icon-compact" aria-hidden="true"></i><span class="ne-btn-label">${t("All")}</span>`;
   downloadAllButton.addEventListener("click", downloadAllTorrents);
 
   const invertButton = document.createElement("button");
   invertButton.className = "copy-magnets-button";
   invertButton.type = "button";
-  invertButton.title = "Invert Selection";
-  invertButton.setAttribute("aria-label", "Invert Selection");
+  invertButton.title = t("Invert Selection");
+  invertButton.setAttribute("aria-label", t("Invert Selection"));
   invertButton.innerHTML =
-    '<i class="fa fa-exchange" aria-hidden="true"></i><span class="ne-btn-label">Invert</span>';
+    `<i class="fa fa-exchange" aria-hidden="true"></i><span class="ne-btn-label">${t("Invert")}</span>`;
   invertButton.addEventListener("click", invertSelection);
 
   // Create the "Clear Selection" button
@@ -120,10 +187,10 @@ export async function addCopyButton() {
   const clearButton = document.createElement("button");
   clearButton.className = "copy-magnets-button clear-button";
   clearButton.type = "button";
-  clearButton.title = "Clear Selection";
-  clearButton.setAttribute("aria-label", "Clear Selection");
+  clearButton.title = t("Clear Selection");
+  clearButton.setAttribute("aria-label", t("Clear Selection"));
   clearButton.innerHTML =
-    '<i class="fa fa-times-circle" aria-hidden="true"></i><span class="ne-btn-label">Clear</span>';
+    `<i class="fa fa-times-circle" aria-hidden="true"></i><span class="ne-btn-label">${t("Clear")}</span>`;
   clearButton.addEventListener("click", clearSelection);
 
   // Create a counter to show how many items are selected
@@ -147,35 +214,36 @@ export async function addCopyButton() {
   const quickFilterButton = document.createElement("button");
   quickFilterButton.className = "copy-magnets-button quick-filter-button";
   quickFilterButton.type = "button";
-  quickFilterButton.title = "Quick Search";
+  quickFilterButton.title = t("Quick Search");
+  quickFilterButton.setAttribute("aria-label", t("Quick Search"));
   if (!prefs.showQuickFilter) {
     quickFilterButton.classList.add("nyaa-enhancer-toolbar__btn--hidden");
   }
   quickFilterButton.innerHTML =
-    '<i class="fa fa-bolt" aria-hidden="true"></i><span class="ne-btn-label">Quick Search</span>';
+    `<i class="fa fa-bolt" aria-hidden="true"></i><span class="ne-btn-label">${t("Quick Search")}</span>`;
   quickFilterButton.addEventListener("click", showQuickFilterPopup);
 
   // Create Keyword Select button
   const keywordSelectButton = document.createElement("button");
   keywordSelectButton.className = "copy-magnets-button keyword-select-button";
   keywordSelectButton.type = "button";
-  keywordSelectButton.title = "Keyword Select";
-  keywordSelectButton.setAttribute("aria-label", "Keyword Select");
+  keywordSelectButton.title = t("Keyword Select");
+  keywordSelectButton.setAttribute("aria-label", t("Keyword Select"));
   keywordSelectButton.innerHTML =
-    '<i class="fa fa-check-square" aria-hidden="true"></i><span class="ne-btn-label">Keywords</span>';
+    `<i class="fa fa-check-square" aria-hidden="true"></i><span class="ne-btn-label">${t("Keywords")}</span>`;
   keywordSelectButton.addEventListener("click", showKeywordSelectPopup);
 
   // Create Keyword Monitor button
   const keywordMonitorButton = document.createElement("button");
   keywordMonitorButton.className = "copy-magnets-button keyword-monitor-button";
   keywordMonitorButton.type = "button";
-  keywordMonitorButton.title = "Keyword Monitor";
-  keywordMonitorButton.setAttribute("aria-label", "Keyword Monitor");
+  keywordMonitorButton.title = t("Keyword Monitor");
+  keywordMonitorButton.setAttribute("aria-label", t("Keyword Monitor"));
   if (!prefs.showMonitorButtons) {
     keywordMonitorButton.classList.add("nyaa-enhancer-toolbar__btn--hidden");
   }
   keywordMonitorButton.innerHTML =
-    '<i class="fa fa-bell" aria-hidden="true"></i><span class="ne-btn-label">Monitor</span>';
+    `<i class="fa fa-bell" aria-hidden="true"></i><span class="ne-btn-label">${t("Monitor")}</span>`;
   keywordMonitorButton.addEventListener("click", showKeywordMonitorPopup);
 
   copyGroup.append(copyButton, copyAllButton);
@@ -195,7 +263,7 @@ export async function addCopyButton() {
 
 export function updateSelectionCounterDisplay(counter, count) {
   if (counter) {
-    counter.textContent = `${count} selected`;
+    counter.textContent = t("{count} selected", { count });
     counter.classList.toggle("magnet-selection-counter--active", count > 0);
   }
   syncSelectAllCheckbox();
@@ -231,7 +299,7 @@ export function syncSelectAllCheckbox() {
   header.disabled = boxes.length === 0;
   header.setAttribute(
     "aria-label",
-    header.checked ? "Deselect all visible torrents" : "Select all visible torrents",
+    header.checked ? t("Deselect all visible torrents") : t("Select all visible torrents"),
   );
 }
 
@@ -301,8 +369,8 @@ export async function addCheckboxColumn() {
     const selectAll = document.createElement("input");
     selectAll.type = "checkbox";
     selectAll.className = "magnet-select-all";
-    selectAll.title = "Select all visible";
-    selectAll.setAttribute("aria-label", "Select all visible torrents");
+    selectAll.title = t("Select all visible");
+    selectAll.setAttribute("aria-label", t("Select all visible torrents"));
     selectAll.addEventListener("click", (event) => {
       event.stopPropagation();
       setVisibleTorrentSelection(selectAll.checked);
@@ -327,16 +395,16 @@ export function copySelectedMagnets() {
       .writeText(magnetText)
       .then(() => {
         showNotification(
-          `${selectedMagnets.length} Magnet links copied to clipboard!`,
+          t("{count} Magnet links copied to clipboard!", { count: selectedMagnets.length }),
           true,
         );
       })
       .catch((err) => {
         console.error("Failed to copy magnets:", err);
-        showNotification("Failed to copy magnet links", false);
+        showNotification(t("Failed to copy magnet links"), false);
       });
   } else {
-    showNotification("No visible torrents selected!", false);
+    showNotification(t("No visible torrents selected!"), false);
   }
 }
 
@@ -364,16 +432,16 @@ export function copyAllMagnets() {
       .writeText(magnetText)
       .then(() => {
         showNotification(
-          `Copied ${allMagnets.length} magnet links to clipboard!`,
+          t("Copied {count} magnet links to clipboard!", { count: allMagnets.length }),
           true,
         );
       })
       .catch((err) => {
         console.error("Failed to copy magnets:", err);
-        showNotification("Failed to copy magnet links", false);
+        showNotification(t("Failed to copy magnet links"), false);
       });
   } else {
-    showNotification("No magnet links found!", false);
+    showNotification(t("No magnet links found!"), false);
   }
 }
 
@@ -391,7 +459,7 @@ export function updateSelectionCounter(selectionCounter) {
 export function clearSelection() {
   const checkboxes = document.querySelectorAll(".magnet-checkbox:checked");
   if (checkboxes.length === 0) {
-    showNotification("No checkboxes are selected to clear!", false);
+    showNotification(t("No checkboxes are selected to clear!"), false);
     return;
   }
 
@@ -405,7 +473,7 @@ export function clearSelection() {
 
   // Reset the selection counter
   updateSelectionCounterDisplay(selectionCounter, 0);
-  showNotification("Selection cleared", true);
+  showNotification(t("Selection cleared"), true);
 }
 
 export async function downloadSelectedTorrents() {
@@ -425,7 +493,7 @@ export async function downloadSelectedTorrents() {
   if (selectedTorrents.length > 0) {
     await downloadTorrents(selectedTorrents, "selected_torrents.zip");
   } else {
-    showNotification("No visible torrents selected!", false);
+    showNotification(t("No visible torrents selected!"), false);
   }
 }
 
@@ -454,19 +522,21 @@ export async function downloadAllTorrents() {
   if (allTorrents.length > 0) {
     await downloadTorrents(allTorrents, "all_torrents.zip");
   } else {
-    showNotification("No torrents found!", false);
+    showNotification(t("No torrents found!"), false);
   }
 }
 
-export async function downloadTorrentsAsZip(torrents, zipName) {
-  const progressNotification = createProgressNotification();
+export async function downloadTorrentsAsZip(torrents, zipName, batch) {
+  const progress = createCancelableDownloadProgress();
+  const { element: progressNotification } = progress;
+  progress.cancel.addEventListener("click", () => batch.controller.abort());
   try {
     const zip = new globalThis.JSZip();
     let completedDownloads = 0;
     const failedNames = [];
     const prefs = await loadStoredPreferences();
 
-    progressNotification.textContent = `Progress: 0/${torrents.length} files`;
+    setDownloadProgress(progress, t("Progress: {completed}/{total} files", { completed: 0, total: torrents.length }));
 
     const blobToBase64 = (blob) => {
       return new Promise((resolve, reject) => {
@@ -478,17 +548,15 @@ export async function downloadTorrentsAsZip(torrents, zipName) {
     };
 
     for (const torrent of torrents) {
+      if (batch.controller.signal.aborted) break;
       try {
         if (completedDownloads > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await waitForDownloadBatchDelay(batch);
         }
+        if (batch.controller.signal.aborted) break;
 
-        const response = await fetch(torrent.url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const blob = await response.blob();
+        const blob = await fetchDownloadBlobWithTimeout(torrent.url, batch);
+        if (batch.controller.signal.aborted) break;
         const base64Data = await blobToBase64(blob);
 
         const filename = prefs.useDisplayName
@@ -498,28 +566,39 @@ export async function downloadTorrentsAsZip(torrents, zipName) {
         zip.file(filename, base64Data.split(",")[1], { base64: true });
 
         completedDownloads++;
-        progressNotification.textContent = `Progress: ${completedDownloads}/${torrents.length} files`;
+        setDownloadProgress(progress, t("Progress: {completed}/{total} files", { completed: completedDownloads, total: torrents.length }));
       } catch (error) {
+        if (batch.controller.signal.aborted) break;
         failedNames.push(torrent.filename);
+        if (error.downloadTimedOut) showNotification(t("Timed out downloading {filename}", { filename: torrent.filename }), false);
         console.error(`Failed to fetch torrent: ${torrent.filename}`, error);
       }
     }
 
-    if (completedDownloads === 0) {
-      setProgressNotificationStatus(progressNotification, "error");
-      progressNotification.textContent =
-        "ZIP failed: none of the torrent files could be downloaded.";
-      dismissProgressNotification(progressNotification);
+    if (batch.controller.signal.aborted) {
+      finishDownloadProgress(progress, "warning", t("ZIP download cancelled. No ZIP file was saved."));
       return;
     }
 
-    progressNotification.textContent = "Generating ZIP file...";
+    if (completedDownloads === 0) {
+      finishDownloadProgress(progress, "error", t("ZIP failed: none of the torrent files could be downloaded."));
+      return;
+    }
+
+    setDownloadProgress(progress, t("Generating ZIP file..."));
 
     const zipBlob = await zip.generateAsync({
       type: "blob",
       compression: "DEFLATE",
       compressionOptions: { level: 5 },
+    }, () => {
+      if (batch.controller.signal.aborted) throw new DOMException("Cancelled", "AbortError");
     });
+
+    if (batch.controller.signal.aborted) {
+      finishDownloadProgress(progress, "warning", t("ZIP download cancelled. No ZIP file was saved."));
+      return;
+    }
 
     const zipUrl = URL.createObjectURL(zipBlob);
     const link = document.createElement("a");
@@ -531,38 +610,40 @@ export async function downloadTorrentsAsZip(torrents, zipName) {
     URL.revokeObjectURL(zipUrl);
 
     if (failedNames.length) {
-      setProgressNotificationStatus(progressNotification, "warning");
-      progressNotification.textContent = `ZIP downloaded with ${failedNames.length} failed file${failedNames.length === 1 ? "" : "s"} (${completedDownloads}/${torrents.length} ok).`;
+      finishDownloadProgress(progress, "warning", t("ZIP downloaded with {failed} failed file{suffix} ({completed}/{total} ok).", { failed: failedNames.length, suffix: failedNames.length === 1 ? "" : "s", completed: completedDownloads, total: torrents.length }));
     } else {
-      progressNotification.textContent = "ZIP file download complete!";
+      finishDownloadProgress(progress, "success", t("ZIP file download complete!"));
     }
-    dismissProgressNotification(progressNotification);
   } catch (error) {
+    if (batch.controller.signal.aborted || error?.name === "AbortError") {
+      finishDownloadProgress(progress, "warning", t("ZIP download cancelled. No ZIP file was saved."));
+      return;
+    }
     console.error("Download failed:", error);
-    setProgressNotificationStatus(progressNotification, "error");
-    progressNotification.textContent =
-      "Failed to create ZIP file: " + error.message;
-    dismissProgressNotification(progressNotification);
+    finishDownloadProgress(progress, "error", t("Failed to create ZIP file: {message}", { message: error.message }));
   }
 }
 
 // Function to download individual torrent files one at a time
 // This is used when ZIP option is disabled or only one file is selected
 // torrents: Array of torrent objects with url and filename
-export async function downloadIndividualTorrents(torrents) {
+export async function downloadIndividualTorrents(torrents, batch) {
   const prefs = await loadStoredPreferences();
-  const progressNotification = createProgressNotification();
+  const progress = createCancelableDownloadProgress();
+  const { element: progressNotification } = progress;
+  progress.cancel.addEventListener("click", () => batch.controller.abort());
   let completedDownloads = 0;
   const failedNames = [];
 
-  progressNotification.textContent = `Progress: 0/${torrents.length} files`;
+  setDownloadProgress(progress, t("Progress: {completed}/{total} files", { completed: 0, total: torrents.length }));
 
   for (const torrent of torrents) {
+    if (batch.controller.signal.aborted) break;
     try {
-      const response = await fetch(torrent.url);
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-      const blob = await response.blob();
+      if (completedDownloads > 0) await waitForDownloadBatchDelay(batch);
+      if (batch.controller.signal.aborted) break;
+      const blob = await fetchDownloadBlobWithTimeout(torrent.url, batch);
+      if (batch.controller.signal.aborted) break;
 
       const filename = prefs.useDisplayName
         ? sanitizeFilename(torrent.filename) + ".torrent"
@@ -578,23 +659,30 @@ export async function downloadIndividualTorrents(torrents) {
       URL.revokeObjectURL(link.href);
 
       completedDownloads++;
-      progressNotification.textContent = `Progress: ${completedDownloads}/${torrents.length} files`;
+      setDownloadProgress(progress, t("Progress: {completed}/{total} files", { completed: completedDownloads, total: torrents.length }));
     } catch (error) {
+      if (batch.controller.signal.aborted) break;
       failedNames.push(torrent.filename);
+      if (error.downloadTimedOut) showNotification(t("Timed out downloading {filename}", { filename: torrent.filename }), false);
       console.error(`Failed to download torrent: ${torrent.filename}`, error);
     }
   }
 
+  if (batch.controller.signal.aborted) {
+    finishDownloadProgress(progress, "warning", t("Download cancelled. Already downloaded files were kept."));
+    return;
+  }
+
   if (completedDownloads === 0) {
     setProgressNotificationStatus(progressNotification, "error");
-    progressNotification.textContent =
-      "Download failed: none of the torrent files could be downloaded.";
+    setDownloadProgress(progress, t("Download failed: none of the torrent files could be downloaded."));
   } else if (failedNames.length) {
     setProgressNotificationStatus(progressNotification, "warning");
-    progressNotification.textContent = `Downloaded ${completedDownloads}/${torrents.length} files (${failedNames.length} failed).`;
+    setDownloadProgress(progress, t("Downloaded {completed}/{total} files ({failed} failed).", { completed: completedDownloads, total: torrents.length, failed: failedNames.length }));
   } else {
-    progressNotification.textContent = "Download complete!";
+    setDownloadProgress(progress, t("Download complete!"));
   }
+  progress.cancel.disabled = true;
   dismissProgressNotification(progressNotification);
 }
 
@@ -602,15 +690,18 @@ export async function downloadIndividualTorrents(torrents) {
 // torrents: Array of torrent objects to download
 // zipName: Name to use for ZIP file if ZIP option is enabled
 export async function downloadTorrents(torrents, zipName) {
-  // Check user's ZIP preference
-  const prefs = await loadStoredPreferences();
-
-  // Use individual downloads if only one file or ZIP is disabled
-  // Otherwise use ZIP download
-  if (torrents.length === 1 || !prefs.useZip) {
-    await downloadIndividualTorrents(torrents);
-  } else {
-    await downloadTorrentsAsZip(torrents, zipName);
+  if (activeDownloadBatch) return;
+  const batch = { controller: new AbortController() };
+  activeDownloadBatch = batch;
+  try {
+    const prefs = await loadStoredPreferences();
+    if (torrents.length === 1 || !prefs.useZip) await downloadIndividualTorrents(torrents, batch);
+    else await downloadTorrentsAsZip(torrents, zipName, batch);
+  } catch (error) {
+    console.error("Unable to start download batch:", error);
+    showNotification(t("Failed to start download: {message}", { message: error.message }), false);
+  } finally {
+    if (activeDownloadBatch === batch) activeDownloadBatch = null;
   }
 }
 
@@ -634,7 +725,7 @@ export function invertSelection() {
   );
 
   showNotification(
-    `Selection inverted (${invertedCount} items selected)`,
+    t("Selection inverted ({count} items selected)", { count: invertedCount }),
     true,
   );
 }

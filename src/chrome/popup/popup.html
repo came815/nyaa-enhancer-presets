@@ -6,11 +6,11 @@
   </head>
   <body>
     <div class="nav-container">
-      <button class="nav-button" data-tab="torrent-client">
+      <button class="nav-button" data-tab="torrent-client" data-i18n="Torrent Client">
         Torrent Client
       </button>
-      <button class="nav-button active" data-tab="settings">Settings</button>
-      <button class="nav-button" data-tab="about">About</button>
+      <button class="nav-button active" data-tab="settings" data-i18n="Settings">Settings</button>
+      <button class="nav-button" data-tab="about" data-i18n="About">About</button>
     </div>
 
     <div class="content-container">
@@ -20,7 +20,7 @@
             <div class="accordion">
               <div class="accordion-header">
                 <h4 style="margin: 0; color: #337ab7; display: inline-block">
-                  How to use Torrent Client
+                  <span data-i18n="How to use Torrent Client">How to use Torrent Client</span>
                 </h4>
                 <span class="accordion-icon">+</span>
               </div>
@@ -42,7 +42,7 @@
                       color: #4caf50;
                     "
                   >
-                    🔒 About the permission prompt
+                    <span data-i18n="🔒 About the permission prompt">🔒 About the permission prompt</span>
                   </p>
                   <p
                     style="
@@ -52,12 +52,7 @@
                       line-height: 1.6;
                     "
                   >
-                    The first time you click
-                    <strong style="color: #ddd">Test Connection</strong>, your
-                    browser will ask permission to access your torrent client's
-                    address. This is a browser security requirement - without
-                    it, the extension cannot reach a local or remote URL outside
-                    of Nyaa.
+                    <span data-i18n="The first time you click Test Connection, your browser will ask permission to access your torrent client's address. This is a browser security requirement: without it, the extension cannot reach a local or remote URL outside of Nyaa.">The first time you click Test Connection, your browser will ask permission to access your torrent client's address. This is a browser security requirement: without it, the extension cannot reach a local or remote URL outside of Nyaa.</span>
                   </p>
                   <p
                     style="
@@ -67,60 +62,36 @@
                       line-height: 1.6;
                     "
                   >
-                    The permission is granted
-                    <strong style="color: #ddd"
-                      >only for the exact host you entered</strong
-                    >
-                    (e.g. your NAS or PC's IP), and is used
-                    <strong style="color: #ddd"
-                      >solely to communicate with your torrent client</strong
-                    >. Nyaa Enhancer does not collect, transmit, or share any of
-                    your data.
+                    <span data-i18n="The permission is granted only for the exact host you entered (for example, your NAS or PC's IP) and is used solely to communicate with your torrent client. Nyaa Enhancer does not collect, transmit, or share any of your data.">The permission is granted only for the exact host you entered (for example, your NAS or PC's IP) and is used solely to communicate with your torrent client. Nyaa Enhancer does not collect, transmit, or share any of your data.</span>
                   </p>
                 </div>
                 <ol style="margin-top: 10px; padding-left: 20px">
                   <li>
-                    Select your torrent client from the <strong>Client</strong>
-                    dropdown below (qBittorrent, Transmission, or Deluge)
+                    <span data-i18n="Select your torrent client from the Client dropdown below (qBittorrent, Transmission, or Deluge).">Select your torrent client from the Client dropdown below (qBittorrent, Transmission, or Deluge).</span>
                   </li>
                   <li>
-                    Enter your client's
-                    <strong>URL</strong> (e.g.
+                    <span data-i18n="Enter your client's URL (for example,">Enter your client's URL (for example,</span>
                     <code style="font-size: 11px"
                       >http://192.168.1.100:8080</code
-                    >)
+                    ><span data-i18n=").">).</span>
                   </li>
                   <li>
-                    Optionally fill in your <strong>credentials</strong> if your
-                    client requires authentication
+                    <span data-i18n="Optionally enter your credentials if the client requires authentication.">Optionally enter your credentials if the client requires authentication.</span>
                   </li>
                   <li>
-                    For <strong>qBittorrent</strong>: in the WebUI go to
-                    <strong>Options → Web UI</strong> and
-                    <strong>uncheck</strong>
-                    <em>Enable Cross-Site Request Forgery (CSRF) protection</em>
-                    (see note below when qBittorrent is selected)
+                    <span data-i18n="For qBittorrent, open Options → Web UI in the WebUI and disable Enable Cross-Site Request Forgery (CSRF) protection. See the note below when qBittorrent is selected.">For qBittorrent, open Options → Web UI in the WebUI and disable Enable Cross-Site Request Forgery (CSRF) protection. See the note below when qBittorrent is selected.</span>
                   </li>
                   <li>
-                    Click <strong>Test Connection</strong> to verify everything
-                    is working, then <strong>Save</strong>
+                    <span data-i18n="Click Test Connection to verify everything is working, then click Save.">Click Test Connection to verify everything is working, then click Save.</span>
                   </li>
                   <li>
-                    On any Nyaa torrent page, use the
-                    <strong style="color: #337ab7"
-                      ><i class="fa fa-cloud-upload"></i> Send</strong
-                    >
-                    button to send the torrent directly to your client
+                    <span data-i18n="On any Nyaa torrent page, use the Send button to send the torrent directly to your client.">On any Nyaa torrent page, use the Send button to send the torrent directly to your client.</span>
                   </li>
                 </ol>
                 <p style="font-style: italic; margin-top: 10px; color: #666">
-                  Make sure
-                  <strong style="color: #337ab7"
-                    >Show Send to Client Button</strong
-                  >
-                  is enabled on the
+                  <span data-i18n="Open the">Open the</span>
                   <a href="/settings" class="ne-settings-page-link" target="_blank" style="color: #337ab7"
-                    >Settings page</a>, otherwise the Send button will not appear on Nyaa pages.
+                    ><span data-i18n="Settings page">Settings page</span></a><span data-i18n="and enable Show Send to Client Button. Otherwise, the Send button will not appear on Nyaa pages.">and enable Show Send to Client Button. Otherwise, the Send button will not appear on Nyaa pages.</span>
                 </p>
               </div>
             </div>
@@ -136,7 +107,7 @@
             "
           >
             <div class="tc-field-group">
-              <label class="tc-label">Client</label>
+              <label class="tc-label" data-i18n="Client">Client</label>
               <select id="tcClientSelect" class="tc-select">
                 <option value="qbittorrent">qBittorrent</option>
                 <option value="transmission">Transmission</option>
@@ -150,24 +121,18 @@
               role="note"
             >
               <p class="tc-qbt-csrf-disclaimer-title">
-                qBittorrent requirement
+                <span data-i18n="qBittorrent requirement">qBittorrent requirement</span>
               </p>
               <p class="tc-qbt-csrf-disclaimer-text">
-                In your qBittorrent WebUI, open
-                <strong>Options → Web UI</strong> and
-                <strong>disable</strong> (uncheck)
-                <strong
-                  >Enable Cross-Site Request Forgery (CSRF) protection</strong
-                >. If this stays enabled, Sending a torrent to qBittorrent will
-                fail.
+                <span data-i18n="In qBittorrent WebUI, open Options → Web UI and disable Enable Cross-Site Request Forgery (CSRF) protection. If this stays enabled, sending a torrent to qBittorrent will fail.">In qBittorrent WebUI, open Options → Web UI and disable Enable Cross-Site Request Forgery (CSRF) protection. If this stays enabled, sending a torrent to qBittorrent will fail.</span>
               </p>
             </div>
 
             <div class="tc-field-group">
               <label class="tc-label"
-                >Torrent Client URL
+                ><span data-i18n="Torrent Client URL">Torrent Client URL</span>
                 <span style="color: #666; font-weight: 400; font-size: 11px"
-                  >(e.g. http://192.168.1.100:8080)</span
+                  ><span data-i18n="(e.g. http://192.168.1.100:8080)">(e.g. http://192.168.1.100:8080)</span></span
                 ></label
               >
               <input
@@ -180,9 +145,9 @@
 
             <div class="tc-field-group">
               <label class="tc-label"
-                >Authentication
+                ><span data-i18n="Authentication">Authentication</span>
                 <span style="color: #666; font-weight: 400; font-size: 11px"
-                  >(optional)</span
+                  ><span data-i18n="(optional)">(optional)</span></span
                 ></label
               >
               <div id="tcUsernameWrapper">
@@ -190,6 +155,7 @@
                   type="text"
                   id="tcUsername"
                   placeholder="Username"
+                  data-i18n-placeholder="Username"
                   class="tc-input"
                   autocomplete="off"
                 />
@@ -199,6 +165,7 @@
                   type="password"
                   id="tcPassword"
                   placeholder="Password"
+                  data-i18n-placeholder="Password"
                   class="tc-input api-key-input"
                   style="padding-right: 36px"
                   autocomplete="new-password"
@@ -208,6 +175,7 @@
                   id="tcPasswordToggle"
                   class="api-key-eye"
                   title="Show/hide password"
+                  data-i18n-title="Show/hide password"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -229,10 +197,10 @@
 
             <div class="tc-actions">
               <button type="button" id="tcTestBtn" class="tc-btn tc-btn-test">
-                Test Connection
+                <span data-i18n="Test Connection">Test Connection</span>
               </button>
               <button type="button" id="tcSaveBtn" class="tc-btn tc-btn-save">
-                Save
+                <span data-i18n="Save">Save</span>
               </button>
               <span id="tcStatus" class="tc-status"></span>
             </div>
@@ -240,8 +208,7 @@
             <p
               style="color: #666; font-size: 11px; margin: 0; line-height: 1.5"
             >
-              ⚠ If your server doesn't require authentication for local
-              networks, leave the credentials fields blank.
+              <span data-i18n="⚠ If your server doesn't require authentication for local networks, leave the credentials fields blank.">⚠ If your server doesn't require authentication for local networks, leave the credentials fields blank.</span>
             </p>
 
           </div>
@@ -254,11 +221,10 @@
           style="margin-bottom: 16px; padding: 12px; background: #1e2a3a; border-radius: 6px; border-left: 3px solid #337ab7"
         >
           <p style="margin: 0; font-size: 13px; color: #aaa; line-height: 1.6">
-            Most settings and monitoring are available on the
+            <span data-i18n="Most settings and monitoring are available on the">Most settings and monitoring are available on the</span>
             <a href="/settings" class="ne-settings-page-link" target="_blank" style="color: #337ab7"
-              >Settings page</a>
-            in the Nyaa navbar. This tab only contains API keys and credentials
-            that must be configured here.
+              ><span data-i18n="Settings page">Settings page</span></a>
+            <span data-i18n="in the Nyaa navbar. This tab only contains API keys and credentials that must be configured here.">in the Nyaa navbar. This tab only contains API keys and credentials that must be configured here.</span>
           </p>
         </div>
 
@@ -269,22 +235,23 @@
             class="setting-item"
             style="flex-direction: column; align-items: stretch; gap: 8px"
           >
-            <span>API Key</span>
+            <span data-i18n="API Key">API Key</span>
             <span style="color: #999; font-size: 12px"
-              >Your API key can be found in
+              ><span data-i18n="Your API key can be found in">Your API key can be found in</span>
               <a
                 href="https://amenzb.moe/profile"
                 target="_blank"
                 style="color: #337ab7"
                 >amenzb.moe/profile</a
               >
-              under API Access.</span
+              <span data-i18n="under API Access.">under API Access.</span></span
             >
             <div class="api-key-wrapper">
               <input
                 type="password"
                 id="ameNZBApiKey"
                 placeholder="Enter your ameNZB API key"
+                data-i18n-placeholder="Enter your ameNZB API key"
                 class="api-key-input"
               />
               <button
@@ -292,6 +259,7 @@
                 id="ameNZBApiKeyToggle"
                 class="api-key-eye"
                 title="Show/hide API key"
+                data-i18n-title="Show/hide API key"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -315,14 +283,14 @@
                 id="ameNZBApiKeyTest"
                 class="api-key-action-btn api-key-test-btn"
               >
-                Test
+                <span data-i18n="Test">Test</span>
               </button>
               <button
                 type="button"
                 id="ameNZBApiKeyClear"
                 class="api-key-action-btn api-key-clear-btn"
               >
-                Clear
+                <span data-i18n="Clear">Clear</span>
               </button>
               <span id="ameNZBTestStatus" class="api-key-test-status"></span>
             </div>
@@ -336,23 +304,22 @@
             class="setting-item"
             style="flex-direction: column; align-items: stretch; gap: 8px"
           >
-            <span>API Key</span>
+            <span data-i18n="API Key">API Key</span>
             <span style="color: #999; font-size: 12px"
-              >Used for anime title autocomplete in Quick Search, and for Similar
-              tab TMDB recommendations if you enable that in Settings. Create a
-              free key at
+              ><span data-i18n="Used for anime title autocomplete in Quick Search, and for Similar tab TMDB recommendations if you enable that in Settings. Create a free key at">Used for anime title autocomplete in Quick Search, and for Similar tab TMDB recommendations if you enable that in Settings. Create a free key at</span>
               <a
                 href="https://www.themoviedb.org/settings/api"
                 target="_blank"
                 style="color: #337ab7"
                 >themoviedb.org/settings/api</a
-              >.</span
+              ><span data-i18n=".">.</span></span
             >
             <div class="api-key-wrapper">
               <input
                 type="password"
                 id="tmdbApiKey"
                 placeholder="Enter your TMDB API key"
+                data-i18n-placeholder="Enter your TMDB API key"
                 class="api-key-input"
               />
               <button
@@ -360,6 +327,7 @@
                 id="tmdbApiKeyToggle"
                 class="api-key-eye"
                 title="Show/hide API key"
+                data-i18n-title="Show/hide API key"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -383,14 +351,14 @@
                 id="tmdbApiKeyTest"
                 class="api-key-action-btn api-key-test-btn"
               >
-                Test
+                <span data-i18n="Test">Test</span>
               </button>
               <button
                 type="button"
                 id="tmdbApiKeyClear"
                 class="api-key-action-btn api-key-clear-btn"
               >
-                Clear
+                <span data-i18n="Clear">Clear</span>
               </button>
               <span id="tmdbTestStatus" class="api-key-test-status"></span>
             </div>
@@ -400,8 +368,7 @@
             style="flex-direction: column; align-items: flex-start; gap: 4px"
           >
             <span style="color: #999; font-size: 12px"
-              >Alternative release titles are resolved via TheXEM using TVDB and
-              AniDB mappings.</span
+              ><span data-i18n="Alternative release titles are resolved via TheXEM using TVDB and AniDB mappings.">Alternative release titles are resolved via TheXEM using TVDB and AniDB mappings.</span></span
             >
           </div>
         </div>
@@ -410,16 +377,16 @@
 
       <div id="about" class="tab-content">
         <div class="version-container">
-          <span class="version-label">🚀 Version</span>
+          <span class="version-label" data-i18n="🚀 Version">🚀 Version</span>
           <span class="version-number"></span>
         </div>
         <p class="about-text">
-          Nyaa Enhancer Presets is a modified version by came815 (2026-09-13), distributed under GPL v3 without warranty.
-          <a href="https://github.com/came815/nyaa-enhancer-presets" target="_blank">Source and modifications</a> ·
-          <a href="https://github.com/came815/nyaa-enhancer-presets/blob/main/LICENSE.txt" target="_blank">GPL v3 license</a>.
+          <span data-i18n="Nyaa Enhancer Presets is a modified version by came815 (2026-09-13), distributed under GPL v3 without warranty.">Nyaa Enhancer Presets is a modified version by came815 (2026-09-13), distributed under GPL v3 without warranty.</span>
+          <a href="https://github.com/came815/nyaa-enhancer-presets" target="_blank" data-i18n="Source and modifications">Source and modifications</a> ·
+          <a href="https://github.com/came815/nyaa-enhancer-presets/blob/main/LICENSE.txt" target="_blank" data-i18n="GPL v3 license">GPL v3 license</a>.
         </p>
         <p class="about-text">
-          This browser extension was made by Arad119. Support the project at
+          <span data-i18n="This browser extension was made by Arad119. Support the project at">This browser extension was made by Arad119. Support the project at</span>
           <a href="https://github.com/Arad119/Nyaa-Enhancer/" target="_blank">
             https://github.com/Arad119/Nyaa-Enhancer/
           </a>

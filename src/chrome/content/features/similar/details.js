@@ -1,6 +1,7 @@
 import { fetchJsonRequestViaBackground } from "../../core/fetch.js";
 import { escapeHtml } from "../../core/html.js";
 import { getAnimeSearchUrl } from "../../../shared/urls.js";
+import { t } from "../../../shared/i18n.js";
 import { lookupSimilarExternalIds } from "./api.js";
 import { DETAILS_CACHE_KEY } from "./cache.js";
 import { applyExternalIdsToMatch, matchExternalLinks } from "./ids.js";
@@ -54,13 +55,13 @@ export function similarCardKey(card) {
 }
 
 export function similarCardActionLabel(prefs) {
-  if (prefs?.similarCardDetailsEnabled !== false) return "View details";
-  if (prefs?.similarOpenQuickSearch) return "Quick Search";
-  return "Search on Nyaa";
+  if (prefs?.similarCardDetailsEnabled !== false) return t("View details");
+  if (prefs?.similarOpenQuickSearch) return t("Quick Search");
+  return t("Search on Nyaa");
 }
 
 export function similarCardSearchLabel(prefs) {
-  return prefs?.similarOpenQuickSearch ? "Quick Search" : "Search on Nyaa";
+  return prefs?.similarOpenQuickSearch ? t("Quick Search") : t("Search on Nyaa");
 }
 
 export function clearSimilarDetailsMemory() {
@@ -451,11 +452,11 @@ function renderModalBody(details, { loading, failed }) {
   if (details.synopsis) {
     synopsis = `<p class="nyaa-enhancer-similar-modal__synopsis">${escapeHtml(details.synopsis)}</p>`;
   } else if (loading) {
-    synopsis = `<p class="nyaa-enhancer-similar-modal__synopsis is-loading">Loading synopsis…</p>`;
+    synopsis = `<p class="nyaa-enhancer-similar-modal__synopsis is-loading">${t("Loading synopsis…")}</p>`;
   } else if (failed) {
-    synopsis = `<p class="nyaa-enhancer-similar-modal__synopsis is-empty">Couldn't load a synopsis right now.</p>`;
+    synopsis = `<p class="nyaa-enhancer-similar-modal__synopsis is-empty">${t("Couldn't load a synopsis right now.")}</p>`;
   } else {
-    synopsis = `<p class="nyaa-enhancer-similar-modal__synopsis is-empty">No synopsis available.</p>`;
+    synopsis = `<p class="nyaa-enhancer-similar-modal__synopsis is-empty">${t("No synopsis available.")}</p>`;
   }
 
   return `
@@ -463,7 +464,7 @@ function renderModalBody(details, { loading, failed }) {
       ${renderCover(details.cover)}
       <div class="nyaa-enhancer-similar-modal__headline">
         ${reason}
-        <h3 class="nyaa-enhancer-similar-modal__title" id="ne-similar-modal-title">${escapeHtml(details.title || "Untitled")}</h3>
+        <h3 class="nyaa-enhancer-similar-modal__title" id="ne-similar-modal-title">${escapeHtml(details.title || t("Untitled"))}</h3>
         ${native}
         ${
           bits.length
@@ -473,11 +474,11 @@ function renderModalBody(details, { loading, failed }) {
         ${renderLinks(details)}
       </div>
     </div>
-    ${renderChips("Genres", details.genres)}
-    ${renderChips("Tags", details.tags)}
-    ${renderChips("Studio", details.studios)}
+    ${renderChips(t("Genres"), details.genres)}
+    ${renderChips(t("Tags"), details.tags)}
+    ${renderChips(t("Studio"), details.studios)}
     <div class="nyaa-enhancer-similar-modal__synopsis-block">
-      <h4 class="nyaa-enhancer-similar-modal__section-title">Synopsis</h4>
+      <h4 class="nyaa-enhancer-similar-modal__section-title">${t("Synopsis")}</h4>
       ${synopsis}
     </div>
   `;
@@ -546,14 +547,14 @@ export function openSimilarCardModal(card, prefs) {
   modal.setAttribute("aria-labelledby", "ne-similar-modal-title");
   modal.innerHTML = `
     <div class="nyaa-enhancer-similar-modal__header">
-      <span class="nyaa-enhancer-similar-modal__kicker">Anime details</span>
-      <button type="button" class="nyaa-enhancer-similar-modal__close" aria-label="Close">&times;</button>
+      <span class="nyaa-enhancer-similar-modal__kicker">${t("Anime details")}</span>
+      <button type="button" class="nyaa-enhancer-similar-modal__close" aria-label="${t("Close")}">&times;</button>
     </div>
     <div class="nyaa-enhancer-similar-modal__body" data-similar-modal-body>
       ${renderModalBody(initial, { loading: true, failed: false })}
     </div>
     <div class="nyaa-enhancer-similar-modal__footer">
-      <button type="button" class="nyaa-enhancer-similar-modal__btn nyaa-enhancer-similar-modal__btn--ghost" data-similar-modal-close>Close</button>
+      <button type="button" class="nyaa-enhancer-similar-modal__btn nyaa-enhancer-similar-modal__btn--ghost" data-similar-modal-close>${t("Close")}</button>
       <button type="button" class="nyaa-enhancer-similar-modal__btn nyaa-enhancer-similar-modal__btn--primary" data-similar-modal-search>${escapeHtml(similarCardSearchLabel(prefs))}</button>
     </div>
   `;

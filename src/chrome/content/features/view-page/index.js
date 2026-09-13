@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { showNotification } from "../../core/notifications.js";
 import { createMagnetCopyButton } from "../../internal.js";
 
@@ -182,7 +183,7 @@ export function applyCopyTorrentTitle(enabled) {
   if (!heading || !titleEl) return;
 
   heading.classList.add("nyaa-enhancer-copy-title");
-  titleEl.title = "Click to copy title";
+  titleEl.title = t("Click to copy title");
   titleEl.dataset.nyaaEnhancerCopyTitleTip = "1";
 
   titleCopyAbort = new AbortController();
@@ -193,8 +194,8 @@ export function applyCopyTorrentTitle(enabled) {
       if (hasNonCollapsedSelectionIn(titleEl)) return;
       copyToClipboard(
         titleEl.textContent.trim(),
-        "Title copied to clipboard!",
-        "Failed to copy title",
+        t("Title copied to clipboard!"),
+        t("Failed to copy title"),
       );
     },
     { signal: titleCopyAbort.signal },
@@ -242,7 +243,7 @@ export function applyCopyTorrentInfoHash(enabled) {
 
   const markKbd = (kbd) => {
     if (!kbd || kbd.dataset.nyaaEnhancerCopyHashTip) return;
-    kbd.title = "Click to copy info hash";
+    kbd.title = t("Click to copy info hash");
     kbd.dataset.nyaaEnhancerCopyHashTip = "1";
   };
 
@@ -262,8 +263,8 @@ export function applyCopyTorrentInfoHash(enabled) {
       if (hasNonCollapsedSelectionIn(kbd)) return;
       copyToClipboard(
         kbd.textContent.trim(),
-        "Info hash copied to clipboard!",
-        "Failed to copy info hash",
+        t("Info hash copied to clipboard!"),
+        t("Failed to copy info hash"),
       );
     },
     { signal: infoHashCopyAbort.signal },

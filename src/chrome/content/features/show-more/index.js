@@ -2,6 +2,7 @@ import {
   loadStoredPreferences,
   savePreferences,
 } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import {
   addCheckboxToTorrentRow,
   applyKeywordHighlights,
@@ -126,32 +127,32 @@ export function setShowMoreButtonContent(
 ) {
   if (!button) return;
   if (loading) {
-    button.innerHTML = `<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> ${loadingLabel}`;
+    button.innerHTML = `<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> ${t(loadingLabel)}`;
   } else if (done) {
-    button.textContent = "No more results";
+    button.textContent = t("No more results");
   } else if (retry) {
-    button.innerHTML = '<i class="fa fa-refresh" aria-hidden="true"></i> Retry';
+    button.innerHTML = `<i class="fa fa-refresh" aria-hidden="true"></i> ${t("Retry")}`;
   } else if (continueLoading) {
     button.innerHTML =
-      '<i class="fa fa-angle-down" aria-hidden="true"></i> Continue loading';
+      `<i class="fa fa-angle-down" aria-hidden="true"></i> ${t("Continue loading")}`;
   } else {
     button.innerHTML =
-      '<i class="fa fa-angle-down" aria-hidden="true"></i> Show more';
+      `<i class="fa fa-angle-down" aria-hidden="true"></i> ${t("Show more")}`;
   }
 }
 
 export function getShowMoreStatusText() {
   neShowMoreState.visibleTotal = Array.from(document.querySelectorAll("table.torrent-list tbody tr"))
     .filter((row) => isNyaaTorrentDataRow(row) && row.style.display !== "none").length;
-  const pages = `${neShowMoreState.loadedPages} loaded page${neShowMoreState.loadedPages === 1 ? "" : "s"}`;
-  const visible = `${neShowMoreState.visibleTotal} visible result${neShowMoreState.visibleTotal === 1 ? "" : "s"}`;
+  const pages = t(neShowMoreState.loadedPages === 1 ? "{count} loaded page" : "{count} loaded pages", { count: neShowMoreState.loadedPages });
+  const visible = t(neShowMoreState.visibleTotal === 1 ? "{count} visible result" : "{count} visible results", { count: neShowMoreState.visibleTotal });
   const startedLater = neShowMoreState.initialPage > 1;
-  const scope = startedLater ? " · loaded pages only" : "";
+  const scope = startedLater ? t(" · loaded pages only") : "";
 
   let detail = "Ready to load more.";
   if (neShowMoreState.loading) detail = neShowMoreState.loadingLabel;
   if (neShowMoreState.retryAt > Date.now()) {
-    detail = `Rate limited. Retry in ${Math.ceil((neShowMoreState.retryAt - Date.now()) / 1000)}s; next page unchanged.`;
+    detail = t("Rate limited. Retry in {seconds}s; next page unchanged.", { seconds: Math.ceil((neShowMoreState.retryAt - Date.now()) / 1000) });
   } else if (neShowMoreState.autoPauseMessage) {
     detail = neShowMoreState.autoPauseMessage;
   } else if (!neShowMoreState.hasMore) {
@@ -159,7 +160,7 @@ export function getShowMoreStatusText() {
   } else if (neShowMoreState.stoppedAtLimit) {
     detail = "10-page limit reached; continue when ready.";
   }
-  return `${pages} · ${visible} · ${detail}${scope}`;
+  return `${pages} · ${visible} · ${t(detail)}${scope}`;
 }
 
 export function getAutoLoadToggle() {
@@ -171,8 +172,8 @@ export function getAutoLoadStatus() {
 }
 
 export function getAutoLoadStatusText() {
-  const pages = `${neShowMoreState.loadedPages} page${neShowMoreState.loadedPages === 1 ? "" : "s"}`;
-  const visible = `${neShowMoreState.visibleTotal} result${neShowMoreState.visibleTotal === 1 ? "" : "s"}`;
+  const pages = t(neShowMoreState.loadedPages === 1 ? "{count} page" : "{count} pages", { count: neShowMoreState.loadedPages });
+  const visible = t(neShowMoreState.visibleTotal === 1 ? "{count} result" : "{count} results", { count: neShowMoreState.visibleTotal });
   let state;
   if (!neShowMoreState.autoPreferenceLoaded) {
     state = "Loading preference…";
@@ -181,7 +182,7 @@ export function getAutoLoadStatusText() {
   } else if (!neShowMoreState.autoLoadEnabled) {
     state = "Automatic loading off";
   } else if (neShowMoreState.retryAt > Date.now()) {
-    state = `Cooldown: retry in ${Math.ceil((neShowMoreState.retryAt - Date.now()) / 1000)}s`;
+    state = t("Cooldown: retry in {seconds}s", { seconds: Math.ceil((neShowMoreState.retryAt - Date.now()) / 1000) });
   } else if (neShowMoreState.autoPaused) {
     state = neShowMoreState.autoPauseMessage || "Automatic loading paused";
   } else if (!neShowMoreState.hasMore) {
@@ -191,7 +192,7 @@ export function getAutoLoadStatusText() {
   } else {
     state = "Scroll for more";
   }
-  return `${pages} · ${visible} · ${state}`;
+  return `${pages} · ${visible} · ${t(state)}`;
 }
 
 export function updateAutoLoadControls() {
@@ -208,8 +209,8 @@ export function updateAutoLoadControls() {
   );
   toggle.textContent =
     neShowMoreState.autoLoadEnabled && !neShowMoreState.autoPaused
-      ? "Pause auto"
-      : "Resume auto";
+      ? t("Pause auto")
+      : t("Resume auto");
 }
 
 export function updateShowMoreButtonState() {
@@ -573,7 +574,7 @@ export async function loadNextNyaaResultsPage({ auto = false } = {}) {
     }
     if (!neShowMoreState.hasMore && neShowMoreState.visibleTotal === 0) {
       showNotification(
-        "No loaded pages contain results matching your current filters.",
+        t("No loaded pages contain results matching your current filters."),
         true,
       );
     }
@@ -586,8 +587,8 @@ export async function loadNextNyaaResultsPage({ auto = false } = {}) {
       }
       showNotification(
         controller.signal.reason === "timeout"
-          ? "Loading timed out. The next page was not advanced; try again."
-          : "Loading cancelled. You can resume from the same next page.",
+          ? t("Loading timed out. The next page was not advanced; try again.")
+          : t("Loading cancelled. You can resume from the same next page."),
         true,
       );
     } else if (error?.status === 429) {
@@ -597,7 +598,7 @@ export async function loadNextNyaaResultsPage({ auto = false } = {}) {
         "Automatic loading paused after rate limiting. Resume when ready.",
       );
       showNotification(
-        "Nyaa is rate limiting requests. Loading is paused before retry.",
+        t("Nyaa is rate limiting requests. Loading is paused before retry."),
         false,
       );
     } else {
@@ -609,8 +610,8 @@ export async function loadNextNyaaResultsPage({ auto = false } = {}) {
       console.error("Failed to load more Nyaa results:", error);
       showNotification(
         error?.code === "UNEXPECTED_HTML"
-          ? "Nyaa returned an unexpected page. Loading was stopped safely."
-          : "Failed to load more results. Please try again.",
+          ? t("Nyaa returned an unexpected page. Loading was stopped safely.")
+          : t("Failed to load more results. Please try again."),
         false,
       );
     }
@@ -674,13 +675,13 @@ export function initShowMorePagination() {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "ne-show-more__button";
-  button.setAttribute("aria-label", "Show more results");
-  button.title = "Load up to 10 more pages of results";
+  button.setAttribute("aria-label", t("Show more results"));
+  button.title = t("Load up to 10 more pages of results");
   button.addEventListener("click", loadNextNyaaResultsPage);
   const cancel = document.createElement("button");
   cancel.type = "button";
   cancel.className = "ne-show-more__cancel";
-  cancel.textContent = "Cancel";
+  cancel.textContent = t("Cancel");
   cancel.hidden = true;
   cancel.addEventListener("click", cancelShowMoreLoading);
   controls.append(button, cancel);

@@ -52,7 +52,7 @@ function fixtureServer() {
       await serveStatic(response, path);
       return;
     }
-    if (url.pathname !== "/" && url.pathname !== "/index.html") { response.writeHead(404).end(); return; }
+    if (url.pathname !== "/" && url.pathname !== "/index.html" && url.pathname !== "/settings") { response.writeHead(404).end(); return; }
     const page = Number(url.searchParams.get("p")) || 1;
     if (page > 1) { requestPages.push(page); requestLog.push({ page, at: Date.now() }); }
     const failure = url.searchParams.get("failure");
@@ -109,7 +109,11 @@ async function setExtensionPreferences(context, values) {
   }), values);
 }
 
-async function openExtensionPage(testInfo, path = "/?s=seeders&o=desc", { autoLoadMore, viewport = { width: 1280, height: 800 } } = {}) {
+async function openExtensionPage(testInfo, path = "/?s=seeders&o=desc", options = {}) {
+  const { autoLoadMore, viewport = { width: 1280, height: 800 } } = options;
+  // The established regression suite asserts English strings. New localization
+  // tests explicitly pass `uiLanguage: undefined` to exercise the production Japanese default.
+  const uiLanguage = Object.hasOwn(options, "uiLanguage") ? options.uiLanguage : "en";
   const extensionDir = await localhostExtension(testInfo);
   const profile = join(tmpdir(), `nyaa-enhancer-profile-${testInfo.workerIndex}-${Date.now()}`);
   await mkdir(profile, { recursive: true });
@@ -119,14 +123,17 @@ async function openExtensionPage(testInfo, path = "/?s=seeders&o=desc", { autoLo
     viewport,
     args: [`--disable-extensions-except=${extensionDir}`, `--load-extension=${extensionDir}`],
   });
-  if (autoLoadMore !== undefined) await setExtensionPreferences(context, { autoLoadMore });
+  const preferences = {};
+  if (autoLoadMore !== undefined) preferences.autoLoadMore = autoLoadMore;
+  if (uiLanguage !== undefined) preferences.uiLanguage = uiLanguage;
+  if (Object.keys(preferences).length) await setExtensionPreferences(context, preferences);
   const page = await context.newPage();
   await page.goto(`${origin}${path}`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#ne-date-presets")).toBeVisible();
   await expect(page.locator(".ne-show-more")).toBeVisible();
   const changelog = page.locator(".changelog-container");
   await expect(changelog).toBeVisible();
-  await changelog.getByRole("button", { name: "Don't show again" }).click();
+  await changelog.locator(".changelog-button.dont-show").click();
   await expect(changelog).toHaveCount(0);
   await page.locator(".magnet-notification-container").evaluateAll((nodes) => nodes.forEach((node) => node.remove()));
   return { context, page, cleanup: async () => { await context.close(); await rm(extensionDir, { recursive: true, force: true }); await rm(profile, { recursive: true, force: true }); } };
@@ -460,4 +467,136 @@ test("new controls stay sticky without overlap in light and dark desktop/mobile 
       }
     }
   } finally { await cleanup(); }
+});
+
+test("Japanese is the default, language changes persist, and native fixture data stays untouched", async ({}, testInfo) => {
+  const initialPath = "/?q=synthetic&c=1_2&dateFilter=week&dateAt=1700000000&s=seeders&o=desc";
+  const { context, page, cleanup } = await openExtensionPage(testInfo, initialPath, { autoLoadMore: false, uiLanguage: undefined });
+  try {
+    await expect(page.locator("#ne-language-select")).toHaveValue("ja");
+    await expect(page.locator("#ne-date-presets")).toHaveAttribute("aria-label", "アップロード期間");
+    await expect(page.locator('#ne-date-presets button[data-preset="week"]')).toHaveText("1週間");
+    await expect(autoLoadToggle(page)).toHaveText("自動読み込みを再開");
+    await expect.poll(() => page.title()).toBe("Synthetic Nyaa verification fixture");
+    await expect(page.locator('form input[name="q"]')).toHaveAttribute("placeholder", "Search...");
+    await expect(page.locator('form input[name="q"]')).toHaveValue("synthetic");
+    await expect(page.locator('form select[name="f"]')).toHaveAttribute("aria-label", "Filter");
+    await expect(page.locator('nav a[href="/settings"]')).toHaveCount(1);
+    await expect(page.locator("#detail-link")).toHaveAttribute("href", "/view/999");
+
+    await page.locator("#ne-language-select").selectOption("en");
+    await expect(page.locator("#ne-language-select")).toHaveValue("en");
+    await expect(page.locator("#ne-date-presets")).toContainText("Uploaded within");
+    await expect(page).toHaveURL(/c=1_2/);
+    await expect(page).toHaveURL(/dateFilter=week/);
+    await expect(page).toHaveURL(/dateAt=1700000000/);
+
+    const newTab = await context.newPage();
+    await newTab.goto(`${origin}${initialPath}`, { waitUntil: "domcontentloaded" });
+    await expect(newTab.locator("#ne-language-select")).toHaveValue("en");
+    await newTab.locator("#ne-language-select").selectOption("ja");
+    await expect(newTab.locator("#ne-language-select")).toHaveValue("ja");
+    await expect(newTab.locator("#ne-date-presets")).toHaveAttribute("aria-label", "アップロード期間");
+  } finally { await cleanup(); }
+});
+
+test("Japanese auto-load state updates dynamically and keeps the accessible control labels", async ({}, testInfo) => {
+  requestPages = [];
+  const { page, cleanup } = await openExtensionPage(testInfo, "/?s=seeders&o=desc&slow=auto", { autoLoadMore: true, uiLanguage: undefined });
+  try {
+    await expect(autoLoadToggle(page)).toHaveText("自動読み込みを停止");
+    await scrollToBottom(page);
+    await expect(autoLoadStatus(page)).toContainText("読み込み中", { timeout: 5_000 });
+    await expect(page.locator(".ne-show-more__button")).toHaveText("読み込み中…");
+    await expect(page.locator(".ne-show-more__button")).toHaveAttribute("aria-busy", "true");
+  } finally { await cleanup(); }
+});
+
+test("Japanese desktop and narrow layouts have no control overlap", async ({}, testInfo) => {
+  const { page, cleanup } = await openExtensionPage(testInfo, "/?s=seeders&o=desc&fixture=visual", { autoLoadMore: false, uiLanguage: undefined });
+  try {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.addStyleTag({ content: "*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}" });
+    for (const [width, height] of [[1920, 1080], [390, 844]]) {
+      await page.setViewportSize({ width, height });
+      for (const dark of [false, true]) {
+        const currentDark = await page.locator("body").evaluate((body) => body.classList.contains("dark"));
+        if (currentDark !== dark) await page.locator("#theme-toggle").click();
+        // Playwright scrolls the footer toggle into view. Reset before measuring
+        // normal-flow controls; the sticky panel is expected to cover rows while scrolling.
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+        await expect(page.locator("#ne-language-select")).toHaveValue("ja");
+        await expect(page.locator("#ne-date-presets")).toHaveAttribute("aria-label", "アップロード期間");
+        const toolbar = await page.locator(".nyaa-enhancer-toolbar").boundingBox();
+        const presets = await page.locator("#ne-date-presets").boundingBox();
+        const table = await page.locator(".table-responsive").boundingBox();
+        expect(boxesOverlap(toolbar, presets)).toBe(false);
+        expect(boxesOverlap(presets, table)).toBe(false);
+        for (const selector of ["#ne-date-presets", ".nyaa-enhancer-toolbar", ".ne-show-more"]) {
+          expect(await page.locator(selector).evaluate((element) => element.scrollWidth > element.clientWidth), `${selector} must not overflow at ${width}px`).toBe(false);
+        }
+        await page.screenshot({ path: join(root, ".qa", `japanese-${width}-${dark ? "dark" : "light"}.png`), fullPage: false });
+      }
+    }
+  } finally { await cleanup(); }
+});
+
+test("settings and the real extension popup expose their Japanese language selectors", async ({}, testInfo) => {
+  const extensionDir = await localhostExtension(testInfo);
+  const profile = join(tmpdir(), `nyaa-enhancer-language-profile-${testInfo.workerIndex}-${Date.now()}`);
+  await mkdir(profile, { recursive: true });
+  const context = await chromium.launchPersistentContext(profile, {
+    channel: "chromium",
+    headless: true,
+    viewport: { width: 1280, height: 800 },
+    args: [`--disable-extensions-except=${extensionDir}`, `--load-extension=${extensionDir}`],
+  });
+  try {
+    await setExtensionPreferences(context, { uiLanguage: "ja" });
+    const settings = await context.newPage();
+    await settings.goto(`${origin}/settings`, { waitUntil: "domcontentloaded" });
+    await expect(settings.locator("#ne-settings-language")).toHaveValue("ja");
+    await expect(settings.locator('label[for="ne-settings-language"]')).toHaveText("表示言語");
+    await expect(settings.locator(".ne-settings-page__header h1")).toHaveText("Nyaa Enhancer 設定");
+    await expect(settings.locator(".ne-settings-page__subtitle")).toContainText("このサイトでの Nyaa Enhancer の動作を設定します。");
+    await settings.locator(".changelog-button.dont-show").click();
+    await settings.locator("#ne-settings-language").selectOption("en");
+    await expect(settings.locator("#ne-settings-language")).toHaveValue("en");
+
+    const worker = context.serviceWorkers()[0] || await context.waitForEvent("serviceworker");
+    const extensionId = new URL(worker.url()).host;
+    const popup = await context.newPage();
+    await popup.goto(`chrome-extension://${extensionId}/popup/popup.html`, { waitUntil: "domcontentloaded" });
+    await expect(popup.locator("#ne-popup-language")).toHaveValue("en");
+    await popup.locator("#ne-popup-language").selectOption("ja");
+    await expect(popup.locator("#ne-popup-language")).toHaveValue("ja");
+    await expect(popup.locator('label[for="ne-popup-language"]')).toHaveText("表示言語");
+    const reloadedSettings = await context.newPage();
+    await reloadedSettings.goto(`${origin}/settings`, { waitUntil: "domcontentloaded" });
+    await expect(reloadedSettings.locator("#ne-settings-language")).toHaveValue("ja");
+    await expect(reloadedSettings.locator(".ne-settings-page__header h1")).toHaveText("Nyaa Enhancer 設定");
+    await expect(reloadedSettings.locator(".ne-settings-page__subtitle")).toContainText("このサイトでの Nyaa Enhancer の動作を設定します。");
+    await expect(popup.locator("#settings .keyword-info")).toContainText("ほとんどの設定と監視は");
+    await reloadedSettings.setViewportSize({ width: 1920, height: 1080 });
+    await reloadedSettings.screenshot({ path: join(root, ".qa", "settings-japanese-1920.png"), fullPage: false });
+    await popup.setViewportSize({ width: 390, height: 844 });
+    const popupLanguageBox = await popup.locator("#ne-popup-language").boundingBox();
+    expect(popupLanguageBox?.x).toBeGreaterThanOrEqual(0);
+    expect((popupLanguageBox?.x || 0) + (popupLanguageBox?.width || 0)).toBeLessThanOrEqual(390);
+    expect(await popup.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await popup.screenshot({ path: join(root, ".qa", "popup-japanese-390.png"), fullPage: false });
+    await popup.setViewportSize({ width: 540, height: 844 });
+    await popup.screenshot({ path: join(root, ".qa", "popup-japanese-540.png"), fullPage: false });
+    await reloadedSettings.setViewportSize({ width: 390, height: 844 });
+    const settingsLanguageBox = await reloadedSettings.locator("#ne-settings-language").boundingBox();
+    expect(settingsLanguageBox?.x).toBeGreaterThanOrEqual(0);
+    expect((settingsLanguageBox?.x || 0) + (settingsLanguageBox?.width || 0)).toBeLessThanOrEqual(390);
+    expect(await reloadedSettings.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await reloadedSettings.screenshot({ path: join(root, ".qa", "settings-japanese-390.png"), fullPage: false });
+  } finally {
+    await context.close();
+    await rm(extensionDir, { recursive: true, force: true });
+    await rm(profile, { recursive: true, force: true });
+  }
 });

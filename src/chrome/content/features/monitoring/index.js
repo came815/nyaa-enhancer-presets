@@ -1,4 +1,5 @@
 import { loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { getKeywordSearchUrl, getTorrentViewUrl, toCurrentNyaaUrl } from "../../../shared/urls.js";
 import { countVisibleCheckedTorrents, getTitleFromRow, showNotification, updateSelectionCounterDisplay } from "../../internal.js";
 
@@ -21,10 +22,10 @@ export function showKeywordMonitorPopup() {
   `;
 
   const content = `
-    <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">Keyword Monitor</h3>
+    <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">${t("Keyword Monitor")}</h3>
     
     <div class="filter-group" style="margin-bottom: 18px;">
-      <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">Enter Keyword to Monitor:</label>
+      <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">${t("Enter Keyword to Monitor:")}</label>
       <input type="text" id="keyword-monitor-input" class="filter-input" style="
         width: 100%;
         padding: 8px 12px;
@@ -46,7 +47,7 @@ export function showKeywordMonitorPopup() {
         font-weight: 500;
         cursor: pointer;
         transition: background-color 0.2s;
-      ">Cancel</button>
+      ">${t("Cancel")}</button>
       <button id="apply-monitor" class="copy-magnets-button" style="
         padding: 8px 16px;
         border: none;
@@ -57,7 +58,7 @@ export function showKeywordMonitorPopup() {
         font-weight: 500;
         cursor: pointer;
         transition: background-color 0.2s;
-      ">Add Monitor</button>
+      ">${t("Add Monitor")}</button>
     </div>
   `;
 
@@ -188,9 +189,9 @@ export function showKeywordMonitorPopup() {
         closePopup();
 
         // Show confirmation
-        showNotification(`Added "${keyword}" to keyword monitoring`);
+        showNotification(t('Added "{keyword}" to keyword monitoring', { keyword }));
       } else {
-        showNotification("Please enter a keyword to monitor", false);
+        showNotification(t("Please enter a keyword to monitor"), false);
         return;
       }
     });
@@ -244,10 +245,10 @@ export function showKeywordSelectPopup() {
   `;
 
   const content = `
-    <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">Keyword Select</h3>
+    <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">${t("Keyword Select")}</h3>
     
     <div class="filter-group" style="margin-bottom: 18px;">
-      <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">Enter Keyword:</label>
+      <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">${t("Enter Keyword:")}</label>
       <input type="text" id="keyword-select-input" class="filter-input" style="
         width: 100%;
         padding: 8px 12px;
@@ -269,7 +270,7 @@ export function showKeywordSelectPopup() {
         font-weight: 500;
         cursor: pointer;
         transition: background-color 0.2s;
-      ">Cancel</button>
+      ">${t("Cancel")}</button>
       <button id="apply-select" class="copy-magnets-button" style="
         padding: 8px 16px;
         border: none;
@@ -280,7 +281,7 @@ export function showKeywordSelectPopup() {
         font-weight: 500;
         cursor: pointer;
         transition: background-color 0.2s;
-      ">Select</button>
+      ">${t("Select")}</button>
     </div>
   `;
 
@@ -395,7 +396,7 @@ export function showKeywordSelectPopup() {
       .value.trim()
       .toLowerCase();
     if (!keyword) {
-      showNotification("Please enter a keyword to select", false);
+      showNotification(t("Please enter a keyword to select"), false);
       return;
     }
 
@@ -413,19 +414,14 @@ export function showKeywordSelectPopup() {
     });
 
     if (matchCount > 0) {
-      showNotification(
-        `Selected ${matchCount} torrent${
-          matchCount === 1 ? "" : "s"
-        } matching "${keyword}"`,
-        true,
-      );
+      showNotification(t('Selected {count} torrent matching "{keyword}"', { count: matchCount, keyword }), true);
       // Update selection counter if it exists
       const counter = document.querySelector(".magnet-selection-counter");
       if (counter) {
         updateSelectionCounterDisplay(counter, countVisibleCheckedTorrents());
       }
     } else {
-      showNotification(`No torrents found matching "${keyword}"`, false);
+      showNotification(t('No torrents found matching "{keyword}"', { keyword }), false);
     }
 
     closePopup();
@@ -511,10 +507,10 @@ export async function addMonitorButton() {
   `;
 
   if (isMonitored) {
-    monitorButton.innerHTML = '<i class="fa fa-bell-slash"></i> Unmonitor';
+    monitorButton.innerHTML = `<i class="fa fa-bell-slash"></i> ${t("Unmonitor")}`;
     monitorButton.style.backgroundColor = "#f44336";
   } else {
-    monitorButton.innerHTML = '<i class="fa fa-bell"></i> Monitor';
+    monitorButton.innerHTML = `<i class="fa fa-bell"></i> ${t("Monitor")}`;
   }
 
   monitorButton.addEventListener("click", async () => {
@@ -533,16 +529,16 @@ export async function addMonitorButton() {
         lastDismissedCount: torrentCount, // Initialize lastDismissedCount to current count
       });
 
-      monitorButton.innerHTML = '<i class="fa fa-bell-slash"></i> Unmonitor';
+      monitorButton.innerHTML = `<i class="fa fa-bell-slash"></i> ${t("Unmonitor")}`;
       monitorButton.style.backgroundColor = "#f44336";
-      showNotification(`Now monitoring ${username} for new uploads`, true);
+      showNotification(t("Now monitoring {username} for new uploads", { username }), true);
     } else {
       // Remove user from monitored list
       currentPrefs.monitoredUsers.splice(userIndex, 1);
 
-      monitorButton.innerHTML = '<i class="fa fa-bell"></i> Monitor';
+      monitorButton.innerHTML = `<i class="fa fa-bell"></i> ${t("Monitor")}`;
       monitorButton.style.backgroundColor = "";
-      showNotification(`Stopped monitoring ${username}`, true);
+      showNotification(t("Stopped monitoring {username}", { username }), true);
     }
 
     // Save updated preferences
@@ -606,7 +602,7 @@ export async function addKeywordMonitoring(keyword, torrentId) {
   if (existingIndex !== -1) {
     // Update existing entry
     prefs.monitoredKeywords[existingIndex].lastTorrentId = torrentId;
-    showNotification(`Updated monitoring for "${keyword}"`, true);
+    showNotification(t('Updated monitoring for "{keyword}"', { keyword }), true);
   } else {
     // Create search URL for this keyword
     const searchUrl = getKeywordSearchUrl(keyword);
@@ -620,7 +616,7 @@ export async function addKeywordMonitoring(keyword, torrentId) {
       lastChecked: Date.now(),
     });
 
-    showNotification(`Now monitoring uploads with "${keyword}"`, true);
+    showNotification(t('Now monitoring uploads with "{keyword}"', { keyword }), true);
   }
 
   // Save updated preferences
@@ -752,7 +748,7 @@ export function createOrUpdateSidebar() {
     font-weight: bold;
     font-size: 14px;
   `;
-  tabIndicator.textContent = "Monitored Torrents";
+  tabIndicator.textContent = t("Monitored Torrents");
   sidebar.appendChild(tabIndicator);
 
   // Add notification dot
@@ -824,7 +820,7 @@ export function showSidebarLoadingState(sidebar) {
     background-color: transparent;
   `;
   loadingIndicator.innerHTML =
-    '<i class="fa fa-refresh fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><br>Checking for updates...';
+    `<i class="fa fa-refresh fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><br>${t("Checking for updates...")}`;
 
   // Create placeholder for refresh button to maintain layout
   const buttonPlaceholder = document.createElement("div");
@@ -1045,9 +1041,7 @@ export function updateSidebarContent(
       listItem.appendChild(userLink);
       listItem.appendChild(
         document.createTextNode(
-          ` has uploaded ${update.newTorrents} new torrent${
-            update.newTorrents > 1 ? "s" : ""
-          }`,
+          t(" has uploaded {count} new torrents", { count: update.newTorrents }),
         ),
       );
 
@@ -1110,7 +1104,7 @@ export function updateSidebarContent(
         window.open(getTorrentViewUrl(update.torrentId), "_blank");
       });
 
-      listItem.appendChild(document.createTextNode("New torrent for keyword "));
+      listItem.appendChild(document.createTextNode(t("New torrent for keyword ")));
       listItem.appendChild(keywordSpan);
 
       notificationList.appendChild(listItem);
@@ -1152,7 +1146,7 @@ export function updateSidebarContent(
       word-break: break-word;
       background-color: transparent;
     `;
-    noUpdatesMsg.textContent = "No new updates from monitored torrents";
+    noUpdatesMsg.textContent = t("No new updates from monitored torrents");
 
     emptyStateContainer.appendChild(noUpdatesMsg);
     scrollableArea.appendChild(emptyStateContainer);
@@ -1184,7 +1178,7 @@ export function updateSidebarContent(
       box-shadow: none;
       margin-bottom: 10px;
     `;
-    dismissButton.innerHTML = '<i class="fa fa-check"></i> Dismiss Updates';
+    dismissButton.innerHTML = `<i class="fa fa-check"></i> ${t("Dismiss Updates")}`;
     dismissButton.addEventListener("click", async () => {
       // Update lastDismissedCount to current torrentCount for all users
       const dismissedUsers = updatedUsers.map((user) => ({
@@ -1221,7 +1215,7 @@ export function updateSidebarContent(
       tabIndicator.style.animation = "none";
 
       // Show notification that updates were dismissed
-      showNotification("Updates dismissed", true);
+      showNotification(t("Updates dismissed"), true);
 
       // Refresh the sidebar
       checkMonitoredUsers();
@@ -1244,11 +1238,11 @@ export function updateSidebarContent(
     cursor: pointer;
     box-shadow: none;
   `;
-  refreshButton.innerHTML = '<i class="fa fa-refresh"></i> Refresh';
+  refreshButton.innerHTML = `<i class="fa fa-refresh"></i> ${t("Refresh")}`;
   refreshButton.addEventListener("click", async () => {
     refreshButton.disabled = true;
     refreshButton.innerHTML =
-      '<i class="fa fa-refresh fa-spin"></i> Refreshing...';
+      `<i class="fa fa-refresh fa-spin"></i> ${t("Refreshing...")}`;
 
     // Save updated counts first
     savePreferences({ monitoredUsers: updatedUsers });

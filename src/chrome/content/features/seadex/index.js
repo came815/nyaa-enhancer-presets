@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { getInfoHashFromMagnet, isNyaaTorrentDataRow } from "../../internal.js";
 
 // ── SeaDex (Best Release Highlighting) ──────────────────────────────────────
@@ -141,7 +142,7 @@ export async function applySeaDexToViewPage() {
       for (const entry of json.items) {
         const seaDexBtn = document.createElement("button");
         seaDexBtn.className = "magnet-button seadex-link";
-        seaDexBtn.textContent = "Go to SeaDex";
+        seaDexBtn.textContent = t("Go to SeaDex");
         seaDexBtn.style.fontFamily = "Segoe UI, Tahoma, sans-serif";
         seaDexBtn.style.fontWeight = "500";
         seaDexBtn.style.marginLeft = "10px";

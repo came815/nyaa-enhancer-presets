@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { getAnimeSearchUrl } from "../../../shared/urls.js";
 import {
   registerDescriptionSectionUpdater,
@@ -66,7 +67,7 @@ export function invalidateSimilarPanel() {
   }
   setAnimetoshoTabStatus(
     body,
-    "Open this tab to load similar anime. Results are fetched once and cached for 24 hours.",
+    t("Open this tab to load similar anime. Results are fetched once and cached for 24 hours."),
   );
 }
 
@@ -134,7 +135,7 @@ export function ensureSimilarDescriptionTab(panel) {
   tab.setAttribute("role", "tab");
   tab.setAttribute("aria-selected", "false");
   tab.dataset.section = "similar";
-  tab.textContent = "Similar";
+  tab.textContent = t("Similar");
   tab.addEventListener("click", () => {
     switchDescriptionPanelTab(panel, "similar");
     const body = getOrCreateSimilarPanelBody(panel);
@@ -162,7 +163,7 @@ export function getOrCreateSimilarPanelBody(panel) {
   body.hidden = true;
   setAnimetoshoTabStatus(
     body,
-    "Open this tab to load similar anime. Results are fetched once and cached for 24 hours.",
+    t("Open this tab to load similar anime. Results are fetched once and cached for 24 hours."),
   );
   panel.appendChild(body);
   ensureSimilarCardClickHandler(body);
@@ -170,11 +171,11 @@ export function getOrCreateSimilarPanelBody(panel) {
 }
 
 function sourceLabel(source) {
-  if (source === "seadex") return "Matched via SeaDex";
-  if (source === "animetosho") return "Matched via AnimeTosho series";
-  if (source === "anilist") return "Matched via AniList title search";
-  if (source === "tenrai") return "Matched via title search";
-  return "Matched";
+  if (source === "seadex") return t("Matched via SeaDex");
+  if (source === "animetosho") return t("Matched via AnimeTosho series");
+  if (source === "anilist") return t("Matched via AniList title search");
+  if (source === "tenrai") return t("Matched via title search");
+  return t("Matched");
 }
 
 function bindCoverErrors(root) {
@@ -232,7 +233,7 @@ function renderRelatedFilters(cards) {
     .join("");
   if (!chips) return "";
   return `
-    <div class="nyaa-enhancer-similar-filters" role="group" aria-label="Related types">
+    <div class="nyaa-enhancer-similar-filters" role="group" aria-label="${t("Related types")}">
       <button type="button" class="nyaa-enhancer-similar-chip is-active" data-kind="all" aria-pressed="true">All</button>
       ${chips}
     </div>
@@ -301,12 +302,12 @@ function renderSimilarContent(result, prefs) {
   const matchKey = similarCardKey(matchCard);
   const parsedHint =
     match.parsedTitle && match.parsedTitle !== match.title
-      ? `<span class="nyaa-enhancer-similar-parsed">From AnimeTosho: ${escapeHtml(match.parsedTitle)}</span>`
+      ? `<span class="nyaa-enhancer-similar-parsed">${escapeHtml(t("From AnimeTosho: {title}", { title: match.parsedTitle }))}</span>`
       : "";
   const vibe = result.vibe || scoredVibe(result, prefs);
   const empty =
     !result.related.length && !result.recommended.length && !vibe.length
-      ? `<p class="nyaa-enhancer-similar-empty">Matched this show, but nothing similar passed the filters.</p>`
+      ? `<p class="nyaa-enhancer-similar-empty">${t("Matched this show, but nothing similar passed the filters.")}</p>`
       : "";
   const limited = result.rateLimited
     ? `<p class="nyaa-enhancer-similar-empty">Some results may be missing because a recommendation API was rate-limited.</p>`
@@ -315,7 +316,7 @@ function renderSimilarContent(result, prefs) {
     result.recommendedError === "tmdb_key_missing"
       ? `<p class="nyaa-enhancer-similar-empty">TMDB recommendations need an API key. Add one in the extension popup under TMDB, then open this tab again.</p>`
       : result.recommendedError === "tmdb_no_id"
-        ? `<p class="nyaa-enhancer-similar-empty">Couldn't find a TMDB listing for this show.</p>`
+        ? `<p class="nyaa-enhancer-similar-empty">${t("Couldn't find a TMDB listing for this show.")}</p>`
         : result.recommendedError === "tmdb_failed"
           ? `<p class="nyaa-enhancer-similar-empty">TMDB didn't return similar titles. Check the API key in the extension popup.</p>`
           : "";
@@ -338,9 +339,9 @@ function renderSimilarContent(result, prefs) {
         </button>
         ${renderMatchLinks(match)}
       </header>
-      ${renderShelf("related", "Related", "Sequel, prequel, spin-off, and movie", result.related, renderRelatedFilters(result.related))}
-      ${renderShelf("recommended", "Recommended", recommendedSubtitle, result.recommended)}
-      ${renderShelf("vibe", "Same vibe", "Shared genres, tags, and studio", vibe)}
+      ${renderShelf("related", t("Related"), "Sequel, prequel, spin-off, and movie", result.related, renderRelatedFilters(result.related))}
+      ${renderShelf("recommended", t("Recommended"), recommendedSubtitle, result.recommended)}
+      ${renderShelf("vibe", t("Same vibe"), "Shared genres, tags, and studio", vibe)}
       ${empty}
       ${tmdbNote}
       ${limited}
@@ -386,10 +387,10 @@ function syncExtraLabel(extra) {
   if (!label) return;
   const count = extraCount(extra);
   if (extra.open) {
-    label.textContent = "Show fewer";
+    label.textContent = t("Show fewer");
     return;
   }
-  label.textContent = count === 1 ? "Show 1 more" : `Show ${count} more`;
+  label.textContent = count === 1 ? t("Show 1 more") : t("Show {count} more", { count });
 }
 
 function layoutShelf(section) {
@@ -607,7 +608,7 @@ async function loadSimilarPanel(body) {
   if (!body) return;
   const infoHash = getViewPageInfoHash();
   if (!infoHash) {
-    setAnimetoshoTabStatus(body, "Could not read info hash.");
+    setAnimetoshoTabStatus(body, t("Could not read info hash."));
     return;
   }
   if (similarPanelState.loadedKey === infoHash || similarPanelState.loading) {
@@ -616,7 +617,7 @@ async function loadSimilarPanel(body) {
 
   const loadId = ++similarSectionLoadId;
   similarPanelState.loading = true;
-  setAnimetoshoTabStatus(body, "Finding similar anime…");
+  setAnimetoshoTabStatus(body, t("Finding similar anime…"));
 
   try {
     const prefs = await loadStoredPreferences();
@@ -630,21 +631,21 @@ async function loadSimilarPanel(body) {
       if (result.error === "rate_limited") {
         setAnimetoshoTabStatus(
           body,
-          "Recommendation APIs are rate-limited right now. Try again in a minute.",
+          t("Recommendation APIs are rate-limited right now. Try again in a minute."),
         );
         return;
       }
       if (result.error === "no_series") {
         setAnimetoshoTabStatus(
           body,
-          "AnimeTosho has no series match for this torrent.",
+          t("AnimeTosho has no series match for this torrent."),
         );
         similarPanelState.loadedKey = infoHash;
         return;
       }
       setAnimetoshoTabStatus(
         body,
-        `Couldn't match this torrent to an anime.${parsed}`,
+        t("Couldn't match this torrent to an anime.{parsed}", { parsed }),
       );
       similarPanelState.loadedKey = infoHash;
       return;
@@ -663,7 +664,7 @@ async function loadSimilarPanel(body) {
   } catch (err) {
     if (loadId !== similarSectionLoadId) return;
     console.error("Nyaa Enhancer: similar anime failed", err);
-    setAnimetoshoTabStatus(body, "Failed to load similar anime. Open this tab again to retry.");
+    setAnimetoshoTabStatus(body, t("Failed to load similar anime. Open this tab again to retry."));
   } finally {
     if (loadId === similarSectionLoadId) similarPanelState.loading = false;
   }

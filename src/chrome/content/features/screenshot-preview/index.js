@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 
 // ── Screenshot Preview (hover thumbnail carousel) ───────────────────────────
 
@@ -317,7 +318,7 @@ export function ensureScreenshotPreviewPopup() {
 
   const loader = document.createElement("div");
   loader.className = "nyaa-screenshot-preview-loader";
-  loader.textContent = "Loading…";
+  loader.textContent = t("Loading…");
 
   const img = document.createElement("img");
   img.className = "nyaa-screenshot-preview-img";
@@ -346,7 +347,7 @@ export function showScreenshotPreviewLoader() {
   ensureScreenshotPreviewPopup();
   screenshotPreview.popupEl.classList.add("visible");
   screenshotPreview.loaderEl.style.display = "block";
-  screenshotPreview.loaderEl.textContent = "Loading…";
+  screenshotPreview.loaderEl.textContent = t("Loading…");
   screenshotPreview.imgEl.style.display = "none";
   screenshotPreview.imgEl.removeAttribute("src");
   screenshotPreview.counterEl.style.display = "none";
@@ -367,7 +368,7 @@ export async function showScreenshotPreviewImage() {
     // Image not in cache yet — show a clean loader so the popup never renders
     // a blank frame or stale counter from the previous hover session.
     screenshotPreview.loaderEl.style.display = "block";
-    screenshotPreview.loaderEl.textContent = "Loading…";
+    screenshotPreview.loaderEl.textContent = t("Loading…");
     screenshotPreview.imgEl.style.display = "none";
     screenshotPreview.counterEl.style.display = "none";
     screenshotPreview.popupEl.classList.add("visible");

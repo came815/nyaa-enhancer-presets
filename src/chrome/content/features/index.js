@@ -423,7 +423,7 @@ export const features = [
           const navList = document.querySelector(".nav.navbar-nav");
           const changelogItem = Array.from(
             navList?.querySelectorAll("li") || [],
-          ).find((li) => li.textContent.trim() === "Changelog");
+          ).find((li) => li.querySelector('a[href="/changelog"]'));
           if (changelogItem) changelogItem.remove();
         } else {
           addChangelogNavItem();

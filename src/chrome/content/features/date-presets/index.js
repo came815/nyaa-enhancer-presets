@@ -1,6 +1,7 @@
 // Nyaa Enhancer Presets modification, 2026-09-13. GPL-3.0.
 import { DATE_PRESETS, buildPresetUrl, preserveDateNavigation, readDatePresetOptions, setDatePresetParams } from "../../../shared/date-presets.js";
 import { getPageFlags } from "../../core/page.js";
+import { createLanguageControl, getLanguage, t } from "../../../shared/i18n.js";
 
 export function initializeDatePresets() {
   if (!getPageFlags().isList || !document.querySelector("table.torrent-list")) return true;
@@ -21,34 +22,35 @@ export function initializeDatePresets() {
   const panel = document.createElement("section");
   panel.id = "ne-date-presets";
   panel.className = "ne-date-presets";
-  panel.setAttribute("aria-label", "Upload period");
+  panel.lang = getLanguage();
+  panel.setAttribute("aria-label", t("Upload period"));
   const label = document.createElement("span");
   label.className = "ne-date-presets__label";
-  label.textContent = "Uploaded within";
+  label.textContent = t("Uploaded within");
   const group = document.createElement("div");
   group.className = "ne-date-presets__choices";
   group.setAttribute("role", "group");
-  group.setAttribute("aria-label", "Date preset");
+  group.setAttribute("aria-label", t("Date preset"));
   for (const preset of DATE_PRESETS) {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = preset.label;
+    button.textContent = t(preset.label);
     button.dataset.preset = preset.key;
     button.setAttribute("aria-pressed", String(options.datePreset === preset.key));
-    button.title = `Last ${preset.days * 24} hours (${preset.days} days)`;
+    button.title = t("Last {hours} hours ({days} days)", { hours: preset.days * 24, days: preset.days });
     button.addEventListener("click", () => window.location.assign(buildPresetUrl(window.location.href, preset.key).href));
     group.appendChild(button);
   }
   const refresh = document.createElement("button");
   refresh.type = "button";
   refresh.className = "ne-date-presets__refresh";
-  refresh.textContent = "Refresh";
-  refresh.title = "Start again from now, sorted by seeders";
+  refresh.textContent = t("Refresh");
+  refresh.title = t("Start again from now, sorted by seeders");
   refresh.addEventListener("click", () => window.location.assign(buildPresetUrl(window.location.href, options.datePreset).href));
   const note = document.createElement("span");
   note.className = "ne-date-presets__note";
-  note.textContent = `As of ${new Date(options.referenceTime * 1000).toLocaleString()}. Loaded results only.`;
-  panel.append(label, group, refresh, note);
+  note.textContent = t("As of {time}. Loaded results only.", { time: new Date(options.referenceTime * 1000).toLocaleString(getLanguage() === "ja" ? "ja-JP" : "en-US") });
+  panel.append(label, group, refresh, createLanguageControl(), note);
   table.insertAdjacentElement("beforebegin", panel);
   preserveListNavigation();
   return true;
@@ -60,7 +62,10 @@ export function preserveListNavigation() {
     if (!href || href.startsWith("#")) continue;
     const target = new URL(href, window.location.href);
     if (target.protocol !== "https:" && target.protocol !== "http:") continue;
-    anchor.href = preserveDateNavigation(target.href, window.location.href).href;
+    const preserved = preserveDateNavigation(target.href, window.location.href);
+    // Leave non-list links untouched: native view/settings selectors rely on
+    // their relative href, and these links do not need period parameters.
+    if (preserved.href !== target.href) anchor.href = preserved.href;
   }
   for (const form of document.querySelectorAll("form")) {
     const target = new URL(form.getAttribute("action") || window.location.href, window.location.href);

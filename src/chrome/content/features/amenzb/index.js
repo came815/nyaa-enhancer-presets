@@ -1,4 +1,5 @@
 import { getPreferences, loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { buildNekoBTMetaRow, escapeNekoBTHtml, fetchUrlViaBackground, formatNekoBTBytes, isSupportedAnimeViewPageCategory, repositionTsukihimeRowAfterNekoBT, setAnimetoshoTabStatus, switchDescriptionPanelTab } from "../../internal.js";
 
 // Remove the ameNZB row, restoring the original info hash row if it was integrated
@@ -174,49 +175,49 @@ export async function fetchAmeNZBSearch(infoHash, apiKey) {
 
 export function renderAmeNZBPanelContent(item) {
   let meta = "";
-  meta += buildNekoBTMetaRow("Title", escapeNekoBTHtml(item.cleanTitle));
-  meta += buildNekoBTMetaRow("Full title", escapeNekoBTHtml(item.title));
+  meta += buildNekoBTMetaRow(t("Title"), escapeNekoBTHtml(item.cleanTitle));
+  meta += buildNekoBTMetaRow(t("Full title"), escapeNekoBTHtml(item.title));
   if (item.comments) {
     meta += buildNekoBTMetaRow(
-      "Release page",
+      t("Release page"),
       `<a href="${escapeNekoBTHtml(item.comments)}" rel="noopener noreferrer nofollow" target="_blank">${escapeNekoBTHtml(item.comments)}</a>`,
     );
   }
   if (item.pubDate) {
     meta += buildNekoBTMetaRow(
-      "Published",
+      t("Published"),
       escapeNekoBTHtml(formatAmeNZBPubDate(item.pubDate)),
     );
   }
   if (item.size) {
     meta += buildNekoBTMetaRow(
-      "Size",
+      t("Size"),
       escapeNekoBTHtml(formatNekoBTBytes(item.size)),
     );
   }
   if (item.grabs != null && item.grabs !== "") {
-    meta += buildNekoBTMetaRow("Grabs", escapeNekoBTHtml(item.grabs));
+    meta += buildNekoBTMetaRow(t("Grabs"), escapeNekoBTHtml(item.grabs));
   }
   if (item.files != null && item.files !== "") {
-    meta += buildNekoBTMetaRow("Files", escapeNekoBTHtml(item.files));
+    meta += buildNekoBTMetaRow(t("Files"), escapeNekoBTHtml(item.files));
   }
   if (item.resolution) {
-    meta += buildNekoBTMetaRow("Resolution", escapeNekoBTHtml(item.resolution));
+    meta += buildNekoBTMetaRow(t("Resolution"), escapeNekoBTHtml(item.resolution));
   }
   if (item.source) {
-    meta += buildNekoBTMetaRow("Source", escapeNekoBTHtml(item.source));
+    meta += buildNekoBTMetaRow(t("Source"), escapeNekoBTHtml(item.source));
   }
   if (item.language) {
-    meta += buildNekoBTMetaRow("Language", escapeNekoBTHtml(item.language));
+    meta += buildNekoBTMetaRow(t("Media language"), escapeNekoBTHtml(item.language));
   }
   if (item.subs) {
-    meta += buildNekoBTMetaRow("Subtitles", escapeNekoBTHtml(item.subs));
+    meta += buildNekoBTMetaRow(t("Subtitles"), escapeNekoBTHtml(item.subs));
   }
   if (item.season != null && item.season !== "") {
-    meta += buildNekoBTMetaRow("Season", escapeNekoBTHtml(item.season));
+    meta += buildNekoBTMetaRow(t("Season"), escapeNekoBTHtml(item.season));
   }
   if (item.episode != null && item.episode !== "") {
-    meta += buildNekoBTMetaRow("Episode", escapeNekoBTHtml(item.episode));
+    meta += buildNekoBTMetaRow(t("Episode"), escapeNekoBTHtml(item.episode));
   }
 
   return `<div class="nyaa-enhancer-nekobt-content"><dl class="nyaa-enhancer-nekobt-meta">${meta}</dl></div>`;
@@ -255,7 +256,7 @@ export async function addAmeNZBToViewPage() {
     );
     const ameNZBContent = buildExternalServiceLinkHtml(
       ameNZBLink,
-      "Not found on ameNZB",
+      t("Not found on ameNZB"),
     );
 
     // If AnimeTosho already claimed the info hash row, append after it.
@@ -415,12 +416,12 @@ export async function updateAmeNZBDescriptionSection() {
   const fetchId = ++amenzbSectionFetchId;
   ensureAmeNZBDescriptionTab(panel);
   const amenzbBody = getOrCreateAmeNZBPanelBody(panel);
-  setAnimetoshoTabStatus(amenzbBody, "Loading ameNZB data…");
+  setAnimetoshoTabStatus(amenzbBody, t("Loading ameNZB data…"));
 
   const infoHash = document.querySelector("kbd")?.textContent?.trim();
   if (!infoHash) {
     if (fetchId !== amenzbSectionFetchId) return;
-    setAnimetoshoTabStatus(amenzbBody, "Could not read info hash.");
+    setAnimetoshoTabStatus(amenzbBody, t("Could not read info hash."));
     return;
   }
 
@@ -428,7 +429,7 @@ export async function updateAmeNZBDescriptionSection() {
   if (fetchId !== amenzbSectionFetchId) return;
 
   if (!item) {
-    setAnimetoshoTabStatus(amenzbBody, "Not found on ameNZB.");
+    setAnimetoshoTabStatus(amenzbBody, t("Not found on ameNZB."));
     return;
   }
 

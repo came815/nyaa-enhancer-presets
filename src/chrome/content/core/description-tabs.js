@@ -1,4 +1,5 @@
 import { updateAmeNZBDescriptionSection, updateAnimetoshoEpisodeFeatures, updateNekoBTDescriptionSection, updateTsukihimeDescriptionSection } from "../internal.js";
+import { t } from "../../shared/i18n.js";
 
 const extraDescriptionSectionUpdaters = [];
 
@@ -135,7 +136,7 @@ export function enhanceTorrentDescriptionPanel() {
     descTab.setAttribute("role", "tab");
     descTab.setAttribute("aria-selected", "true");
     descTab.dataset.section = "description";
-    descTab.textContent = "Description";
+    descTab.textContent = t("Description");
     descTab.addEventListener("click", () =>
       switchDescriptionPanelTab(panel, "description"),
     );

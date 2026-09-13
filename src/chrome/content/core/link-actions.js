@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../shared/prefs.js";
+import { t } from "../../shared/i18n.js";
 import { createAnimetoshoListAnchor, createAnimetoshoListPlaceholder, createSendListLink, getTorrentInfoHashFromRow, isAnimetoshoListCategoryRow, isNyaaTorrentDataRow, showNotification } from "../internal.js";
 
 export function getTorrentLinkCell(row) {
@@ -140,18 +141,18 @@ export function createMagnetCopyLink(magnetLink) {
   const copyLink = document.createElement("a");
   copyLink.href = "#";
   copyLink.className = "link-action-copy";
-  copyLink.title = "Copy magnet link to clipboard";
+  copyLink.title = t("Copy magnet link to clipboard");
   copyLink.innerHTML = '<i class="fa fa-fw fa-clipboard"></i>';
   copyLink.addEventListener("click", (e) => {
     e.preventDefault();
     navigator.clipboard
       .writeText(magnetLink.href)
       .then(() => {
-        showNotification("Magnet link copied to clipboard!", true);
+        showNotification(t("Magnet link copied to clipboard!"), true);
       })
       .catch((err) => {
         console.error("Failed to copy magnet:", err);
-        showNotification("Failed to copy magnet link", false);
+        showNotification(t("Failed to copy magnet link"), false);
       });
   });
   return copyLink;
@@ -160,8 +161,8 @@ export function createMagnetCopyLink(magnetLink) {
 export function createMagnetCopyButton(magnetLink, { extraStyles = {} } = {}) {
   const magnetButton = document.createElement("button");
   magnetButton.className = "magnet-button";
-  magnetButton.title = "Copy magnet link to clipboard";
-  magnetButton.innerHTML = '<i class="fa fa-clipboard"></i> Copy';
+  magnetButton.title = t("Copy magnet link to clipboard");
+  magnetButton.innerHTML = `<i class="fa fa-clipboard"></i> ${t("Copy")}`;
   magnetButton.style.fontFamily = "Segoe UI, Tahoma, sans-serif";
   magnetButton.style.fontWeight = "500";
   Object.assign(magnetButton.style, extraStyles);
@@ -169,11 +170,11 @@ export function createMagnetCopyButton(magnetLink, { extraStyles = {} } = {}) {
     navigator.clipboard
       .writeText(magnetLink.href)
       .then(() => {
-        showNotification("Magnet link copied to clipboard!", true);
+        showNotification(t("Magnet link copied to clipboard!"), true);
       })
       .catch((err) => {
         console.error("Failed to copy magnet:", err);
-        showNotification("Failed to copy magnet link", false);
+        showNotification(t("Failed to copy magnet link"), false);
       });
   });
   return magnetButton;

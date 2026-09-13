@@ -1,5 +1,6 @@
 // Nyaa Enhancer Presets modification, 2026-09-13. GPL-3.0.
 import { DATE_PRESETS, normalizeDatePreset, readDatePresetOptions, isWithinDatePreset, buildPresetUrl } from "../../../shared/date-presets.js";
+import { t } from "../../../shared/i18n.js";
 import { updateShowMoreButtonState } from "../show-more/index.js";
 import { getPreferences, loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
 import { convertToBytes, fetchJsonViaBackground, formatNekoBTBytes, isNyaaTorrentDataRow, showNotification, syncSelectionToVisibleRows } from "../../internal.js";
@@ -78,7 +79,7 @@ export function clampQuickSearchFileSizeBounds(minBytes, maxBytes) {
 
 export function formatQuickSearchFileSizeSummary(minBytes, maxBytes) {
   if (minBytes <= 0 && maxBytes >= QS_FILE_SIZE_ABSOLUTE_MAX_BYTES) {
-    return "Any size";
+    return t("Any size");
   }
   return `${formatNekoBTBytes(minBytes)} – ${formatNekoBTBytes(maxBytes)}`;
 }
@@ -263,19 +264,19 @@ export function applyQuickSearchClientFilters(options) {
     visibleCount++;
   });
 
-  if (options.datePreset) filterParts.push(DATE_PRESETS.find((entry) => entry.key === options.datePreset)?.label || "Month");
+  if (options.datePreset) filterParts.push(t(DATE_PRESETS.find((entry) => entry.key === options.datePreset)?.label || "Month"));
   if (options.sizeEnabled) {
     filterParts.push(
-      `size ${formatNekoBTBytes(options.sizeMin)} – ${formatNekoBTBytes(options.sizeMax)}`,
+      t("size {min} – {max}", { min: formatNekoBTBytes(options.sizeMin), max: formatNekoBTBytes(options.sizeMax) }),
     );
   }
 
   const filterLabel = filterParts.length
-    ? ` filtered by ${filterParts.join(" and ")}`
+    ? t(" filtered by {filters}", { filters: filterParts.join(t(" and ")) })
     : "";
 
   showNotification(
-    `Showing ${visibleCount} torrents (${hiddenCount} hidden)${filterLabel}`,
+    t("Showing {visible} torrents ({hidden} hidden){filterLabel}", { visible: visibleCount, hidden: hiddenCount, filterLabel }),
     true,
   );
   syncSelectionToVisibleRows();
@@ -649,10 +650,10 @@ export function initQuickSearchAnimeAutocomplete(popup) {
     aliasesPreviewEl.textContent = checked.length
       ? checked.join("|")
       : hasBoxes
-        ? "Select at least one alias"
+      ? t("Select at least one alias")
         : "";
     aliasesMetaEl.textContent = hasBoxes
-      ? `${checked.length} of ${boxes.length} selected · Shift+click a range`
+      ? t("{checked} of {total} selected · Shift+click a range", { checked: checked.length, total: boxes.length })
       : "";
     aliasesClearBtn.disabled = checked.length === 0;
     aliasesInvertBtn.disabled = !hasBoxes;
@@ -698,7 +699,7 @@ export function initQuickSearchAnimeAutocomplete(popup) {
     aliasesPanel.hidden = aliases.length === 0;
     aliasesPanel.classList.toggle("is-ready", aliases.length > 0);
     aliasesListEl.title = aliases.length
-      ? "Shift+click to select or deselect a range"
+    ? t("Shift+click to select or deselect a range")
       : "";
     updateAliasPreview();
   };
@@ -709,12 +710,12 @@ export function initQuickSearchAnimeAutocomplete(popup) {
       .map((input) => input.value.trim())
       .filter(Boolean);
     if (!checked.length) {
-      showNotification("Select at least one alias to apply", false);
+    showNotification(t("Select at least one alias to apply"), false);
       return;
     }
     animeInput.value = checked.join("|");
     hideSuggestions();
-    showNotification("Anime search aliases applied", true);
+  showNotification(t("Anime search aliases applied"), true);
   };
 
   aliasesClearBtn.addEventListener("click", () => {
@@ -740,7 +741,7 @@ export function initQuickSearchAnimeAutocomplete(popup) {
     if (!prefs.tmdbApiKey) {
       hintEl.hidden = false;
       hintEl.textContent =
-        "Add a TMDB API key in extension settings to search anime titles and load aliases.";
+    t("Add a TMDB API key in extension settings to search anime titles and load aliases.");
     }
   });
 
@@ -764,7 +765,7 @@ export function initQuickSearchAnimeAutocomplete(popup) {
       const token = ++activeSearchToken;
       suggestionsEl.hidden = false;
       suggestionsEl.innerHTML =
-        '<div class="qf-anime-suggestion qf-anime-suggestion--status">Searching…</div>';
+        `<div class="qf-anime-suggestion qf-anime-suggestion--status">${t("Searching…")}</div>`;
 
       try {
         const results = await searchTmdbAnime(query, prefs.tmdbApiKey);
@@ -772,7 +773,7 @@ export function initQuickSearchAnimeAutocomplete(popup) {
 
         if (!results.length) {
           suggestionsEl.innerHTML =
-            '<div class="qf-anime-suggestion qf-anime-suggestion--status">No matches found</div>';
+        `<div class="qf-anime-suggestion qf-anime-suggestion--status">${t("No matches found")}</div>`;
           return;
         }
 
@@ -803,7 +804,7 @@ export function initQuickSearchAnimeAutocomplete(popup) {
             setAliasActionsEnabled(false);
             aliasesMetaEl.textContent = "";
             aliasesListEl.innerHTML =
-              '<div class="qf-anime-suggestion qf-anime-suggestion--status">Loading aliases…</div>';
+          `<div class="qf-anime-suggestion qf-anime-suggestion--status">${t("Loading aliases…")}</div>`;
             aliasesPreviewEl.textContent = "";
 
             try {
@@ -813,13 +814,13 @@ export function initQuickSearchAnimeAutocomplete(popup) {
               );
               if (!aliases.length) {
                 aliasesListEl.innerHTML =
-                  '<div class="qf-anime-suggestion qf-anime-suggestion--status">No aliases found</div>';
+          `<div class="qf-anime-suggestion qf-anime-suggestion--status">${t("No aliases found")}</div>`;
                 return;
               }
               renderAliasCheckboxes(aliases);
             } catch {
               aliasesListEl.innerHTML =
-                '<div class="qf-anime-suggestion qf-anime-suggestion--status">Failed to load aliases</div>';
+          `<div class="qf-anime-suggestion qf-anime-suggestion--status">${t("Failed to load aliases")}</div>`;
             }
           });
           suggestionsEl.appendChild(button);
@@ -828,8 +829,8 @@ export function initQuickSearchAnimeAutocomplete(popup) {
         if (token !== activeSearchToken) return;
         suggestionsEl.innerHTML =
           error?.message === "rate_limited"
-            ? '<div class="qf-anime-suggestion qf-anime-suggestion--status">TMDB rate limit reached — wait a moment</div>'
-            : '<div class="qf-anime-suggestion qf-anime-suggestion--status">Search failed</div>';
+      ? `<div class="qf-anime-suggestion qf-anime-suggestion--status">${t("TMDB rate limit reached — wait a moment")}</div>`
+      : `<div class="qf-anime-suggestion qf-anime-suggestion--status">${t("Search failed")}</div>`;
       }
     }, TMDB_SEARCH_DEBOUNCE_MS);
   });
@@ -979,32 +980,32 @@ export function showQuickFilterPopup(options = {}) {
   popup.className = "quick-filter-popup";
 
   popup.innerHTML = `
-    <h3 class="qf-title">Quick Search</h3>
+    <h3 class="qf-title">${t("Quick Search")}</h3>
 
     <div class="qf-body">
       <div class="qf-grid qf-grid--2 qf-grid--anime-row">
         <div class="qf-field qf-field--anime-name">
-          <label class="qf-label" for="anime-name">Anime Name</label>
+          <label class="qf-label" for="anime-name">${t("Anime Name")}</label>
           <div class="qf-anime-search">
-            <input type="text" id="anime-name" class="qf-input" placeholder="Search by title…" autocomplete="off">
+            <input type="text" id="anime-name" class="qf-input" placeholder="${t("Search by title…")}" autocomplete="off">
             <div class="qf-anime-suggestions" id="anime-name-suggestions" hidden></div>
           </div>
         </div>
         <div class="qf-field">
-          <label class="qf-label" for="encoder-name">Encoder</label>
-          <input type="text" id="encoder-name" class="qf-input" placeholder="e.g. SubsPlease">
+          <label class="qf-label" for="encoder-name">${t("Encoder")}</label>
+          <input type="text" id="encoder-name" class="qf-input" placeholder="${t("e.g. SubsPlease")}">
         </div>
         <p class="qf-anime-hint" id="anime-name-hint" hidden></p>
         <div class="qf-anime-aliases" id="anime-name-aliases" hidden>
           <div class="qf-anime-aliases-header">
             <div class="qf-anime-aliases-heading">
-              <span class="qf-anime-aliases-title">Select aliases for search</span>
+              <span class="qf-anime-aliases-title">${t("Select aliases for search")}</span>
               <span class="qf-anime-aliases-meta" id="anime-aliases-meta"></span>
             </div>
             <div class="qf-anime-aliases-actions">
-              <button type="button" id="anime-aliases-clear" class="qf-btn qf-btn--outline qf-btn--compact" title="Uncheck all aliases" disabled>Clear selected</button>
-              <button type="button" id="anime-aliases-invert" class="qf-btn qf-btn--outline qf-btn--compact" title="Toggle all aliases" disabled>Invert selection</button>
-              <button type="button" id="anime-aliases-apply" class="qf-btn qf-btn--secondary qf-btn--compact" title="Fill the search field with selected aliases" disabled>Apply selected</button>
+              <button type="button" id="anime-aliases-clear" class="qf-btn qf-btn--outline qf-btn--compact" title="${t("Uncheck all aliases")}" disabled>${t("Clear selected")}</button>
+              <button type="button" id="anime-aliases-invert" class="qf-btn qf-btn--outline qf-btn--compact" title="${t("Toggle all aliases")}" disabled>${t("Invert selection")}</button>
+              <button type="button" id="anime-aliases-apply" class="qf-btn qf-btn--secondary qf-btn--compact" title="${t("Fill the search field with selected aliases")}" disabled>${t("Apply selected")}</button>
             </div>
           </div>
           <div class="qf-anime-aliases-list" id="anime-aliases-list"></div>
@@ -1014,9 +1015,9 @@ export function showQuickFilterPopup(options = {}) {
 
       <div class="qf-grid qf-grid--3">
         <div class="qf-field">
-          <label class="qf-label" for="quality">Quality</label>
+          <label class="qf-label" for="quality">${t("Quality")}</label>
           <select id="quality" class="qf-select">
-            <option value="">Any quality</option>
+            <option value="">${t("Any quality")}</option>
             <option value="480p">480p</option>
             <option value="720p">720p</option>
             <option value="1080p">1080p</option>
@@ -1024,9 +1025,9 @@ export function showQuickFilterPopup(options = {}) {
           </select>
         </div>
         <div class="qf-field">
-          <label class="qf-label" for="format">Format</label>
+          <label class="qf-label" for="format">${t("Format")}</label>
           <select id="format" class="qf-select">
-            <option value="">Any format</option>
+            <option value="">${t("Any format")}</option>
             <option value="264">H264/AVC</option>
             <option value="x265">x265/HEVC</option>
             <option value="AV1">AV1</option>
@@ -1034,9 +1035,9 @@ export function showQuickFilterPopup(options = {}) {
           </select>
         </div>
         <div class="qf-field">
-          <label class="qf-label" for="source">Source</label>
+          <label class="qf-label" for="source">${t("Source")}</label>
           <select id="source" class="qf-select">
-            <option value="">Any source</option>
+            <option value="">${t("Any source")}</option>
             <option value="BD">BD (Blu-ray)</option>
             <option value="Web">Web (Streaming Service)</option>
             <option value="DVD">DVD</option>
@@ -1045,41 +1046,41 @@ export function showQuickFilterPopup(options = {}) {
       </div>
 
       <div class="qf-field">
-        <label class="qf-label" for="category">Category</label>
+        <label class="qf-label" for="category">${t("Category")}</label>
         <select id="category" class="qf-select">
-          <option value="0">All categories</option>
-          <option value="1">Anime Music Video</option>
-          <option value="2">English-translated</option>
-          <option value="3">Non-English-translated</option>
-          <option value="4">Raw</option>
+          <option value="0">${t("All categories")}</option>
+          <option value="1">${t("Anime Music Video")}</option>
+          <option value="2">${t("English-translated")}</option>
+          <option value="3">${t("Non-English-translated")}</option>
+          <option value="4">${t("Raw")}</option>
         </select>
       </div>
 
       <div class="qf-options">
         <label class="qf-checkbox">
           <input type="checkbox" id="dual-audio">
-          <span>Dual Audio</span>
+          <span>${t("Dual Audio")}</span>
         </label>
         <label class="qf-checkbox">
           <input type="checkbox" id="season-pack">
-          <span>Season Pack</span>
+          <span>${t("Season Pack")}</span>
         </label>
         <label class="qf-date-preset" for="qs-date-preset">
-          Uploaded within
+          ${t("Uploaded within")}
           <select id="qs-date-preset">
-            ${DATE_PRESETS.map((preset) => `<option value="${preset.key}">${preset.label}</option>`).join("")}
+            ${DATE_PRESETS.map((preset) => `<option value="${preset.key}">${t(preset.label)}</option>`).join("")}
           </select>
         </label>
         <label class="qf-checkbox">
           <input type="checkbox" id="qs-file-size-enabled">
-          <span>File Size</span>
+          <span>${t("File Size")}</span>
         </label>
       </div>
 
       <div class="qf-size-filter" id="qs-file-size-section" hidden>
         <div class="qf-size-inputs">
           <div class="qf-size-field">
-            <label for="qs-file-size-min-input">Minimum</label>
+            <label for="qs-file-size-min-input">${t("Minimum")}</label>
             <div class="qf-size-value-row">
               <input type="number" id="qs-file-size-min-input" min="0" step="any">
               <select id="qs-file-size-min-unit">
@@ -1092,7 +1093,7 @@ export function showQuickFilterPopup(options = {}) {
             </div>
           </div>
           <div class="qf-size-field">
-            <label for="qs-file-size-max-input">Maximum</label>
+            <label for="qs-file-size-max-input">${t("Maximum")}</label>
             <div class="qf-size-value-row">
               <input type="number" id="qs-file-size-max-input" min="0" step="any">
               <select id="qs-file-size-max-unit">
@@ -1112,19 +1113,19 @@ export function showQuickFilterPopup(options = {}) {
           <input type="range" id="qs-file-size-min-slider" min="0" max="51200" step="1">
           <input type="range" id="qs-file-size-max-slider" min="0" max="51200" step="1">
         </div>
-        <div class="qf-size-summary" id="qs-file-size-summary">Any size</div>
+        <div class="qf-size-summary" id="qs-file-size-summary">${t("Any size")}</div>
       </div>
     </div>
 
     <div class="qf-footer">
-      <button id="reset-filter" type="button" class="qf-btn qf-btn--outline qf-btn--compact">Reset filters</button>
+      <button id="reset-filter" type="button" class="qf-btn qf-btn--outline qf-btn--compact">${t("Reset filters")}</button>
       <label class="qf-checkbox qf-remember-selection" for="qs-remember-selection">
         <input type="checkbox" id="qs-remember-selection" checked>
-        <span>Remember selection</span>
+        <span>${t("Remember selection")}</span>
       </label>
       <div class="qf-footer-spacer" aria-hidden="true"></div>
-      <button id="cancel-filter" type="button" class="qf-btn qf-btn--secondary">Cancel</button>
-      <button id="apply-filter" type="button" class="qf-btn qf-btn--primary">Search</button>
+      <button id="cancel-filter" type="button" class="qf-btn qf-btn--secondary">${t("Cancel")}</button>
+      <button id="apply-filter" type="button" class="qf-btn qf-btn--primary">${t("Search")}</button>
     </div>
   `;
 
@@ -1225,9 +1226,9 @@ export function showQuickFilterPopup(options = {}) {
       if (rememberSelectionCheckbox.checked) {
         await clearQuickSearchState();
       }
-      showNotification("All filters have been reset", true);
+      showNotification(t("All filters have been reset"), true);
     } else {
-      showNotification("No active filters to reset", false);
+      showNotification(t("No active filters to reset"), false);
     }
   });
 
@@ -1275,7 +1276,7 @@ export function showQuickFilterPopup(options = {}) {
 
     if (!hasAnyFilters) {
       showNotification(
-        "No filter options selected. Please select at least one option to search.",
+        t("No filter options selected. Please select at least one option to search."),
         false,
       );
       return;

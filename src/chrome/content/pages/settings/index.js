@@ -6,6 +6,7 @@ import {
 import { getKeywordSearchUrl, setNyaaOriginFallback } from "../../../shared/urls.js";
 import { NE_DEFAULT_HIGHLIGHT_COLOR, checkMonitoredUsers, getHighlightRules, handleSettingChange, normalizeHighlightColor } from "../../internal.js";
 import { clearSimilarCaches, formatSimilarCacheBytes, getSimilarCacheUsage, isSimilarCacheKey } from "../../features/similar/cache.js";
+import { createLanguageControl, t } from "../../../shared/i18n.js";
 
 // ── Settings Page ───────────────────────────────────────────────────────────
 
@@ -31,8 +32,8 @@ export function neSettingsCreateToggleRow(settingKey, label, hint = "", dependsO
   if (dependsOn) row.dataset.dependsOn = dependsOn;
   row.innerHTML = `
     <div class="ne-settings-row__info">
-      <span class="ne-settings-row__label">${label}</span>
-      ${hint ? `<span class="ne-settings-row__hint">${hint}</span>` : ""}
+      <span class="ne-settings-row__label">${t(label)}</span>
+      ${hint ? `<span class="ne-settings-row__hint">${t(hint)}</span>` : ""}
     </div>
     <button type="button" class="ne-settings-toggle is-off" data-setting="${settingKey}" role="switch" aria-checked="false">
       <span class="ne-settings-toggle__thumb"></span>
@@ -163,6 +164,21 @@ const NE_SETTINGS_SEARCH_SELECTORS = [
   ".ne-settings-monitor-tab",
 ].join(", ");
 
+function neSettingsTranslateStaticText(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    const source = node.nodeValue;
+    const trimmed = source.trim();
+    if (!trimmed) return;
+    const key = trimmed.replace(/\s+/g, " ");
+    const translated = t(key);
+    if (translated === key) return;
+    node.nodeValue = source.replace(trimmed, translated);
+  });
+}
+
 function neSettingsSearchableText(section) {
   const parts = [];
   const navLabel =
@@ -221,7 +237,9 @@ export function neSettingsApplySearch(rawQuery) {
   if (empty) {
     empty.hidden = !query || visibleCount > 0;
     if (!empty.hidden) {
-      empty.textContent = `No settings match “${String(rawQuery || "").trim()}”.`;
+      empty.textContent = t("No settings match “{query}”.", {
+        query: String(rawQuery || "").trim(),
+      });
     }
   }
 
@@ -230,7 +248,7 @@ export function neSettingsApplySearch(rawQuery) {
       status.textContent = "";
       return;
     }
-    status.textContent = `${visibleCount} section${visibleCount === 1 ? "" : "s"}`;
+    status.textContent = t("{count} section(s)", { count: visibleCount });
   }
 }
 
@@ -379,10 +397,10 @@ export function neSettingsFormatTimeAgo(date) {
   const diffMs = Date.now() - date.getTime();
   const diffMins = Math.round(diffMs / 60000);
   if (diffMins < 60) {
-    return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
+    return t("{count} minute(s) ago", { count: diffMins });
   }
   const hours = Math.round(diffMins / 60);
-  return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  return t("{count} hour(s) ago", { count: hours });
 }
 
 export function neSettingsDisplayMonitoredUsers(monitoredUsers) {
@@ -392,7 +410,7 @@ export function neSettingsDisplayMonitoredUsers(monitoredUsers) {
   listEl.innerHTML = "";
   if (!monitoredUsers?.length) {
     listEl.innerHTML =
-      '<p class="ne-settings-monitor-empty">You are not monitoring any users yet. Visit a user page and click the Monitor button to start tracking.</p>';
+      `<p class="ne-settings-monitor-empty">${t("You are not monitoring any users yet. Visit a user page and click the Monitor button to start tracking.")}</p>`;
     return;
   }
 
@@ -409,9 +427,9 @@ export function neSettingsDisplayMonitoredUsers(monitoredUsers) {
       <div class="ne-settings-monitor-item__info">
         <a class="ne-settings-monitor-item__title" href="${user.url}" target="_blank" rel="noopener"></a>
         <div class="ne-settings-monitor-item__meta">
-          <span>${user.torrentCount} torrents</span>
-          ${hasNewTorrents ? `<span class="ne-settings-monitor-item__new">${newTorrentsCount} new</span>` : ""}
-          <span>Checked ${neSettingsFormatTimeAgo(lastChecked)}</span>
+          <span>${t("{count} torrents", { count: user.torrentCount })}</span>
+          ${hasNewTorrents ? `<span class="ne-settings-monitor-item__new">${t("{count} new", { count: newTorrentsCount })}</span>` : ""}
+          <span>${t("Checked {time}", { time: neSettingsFormatTimeAgo(lastChecked) })}</span>
         </div>
       </div>
     `;
@@ -421,7 +439,7 @@ export function neSettingsDisplayMonitoredUsers(monitoredUsers) {
     const unmonitorBtn = document.createElement("button");
     unmonitorBtn.type = "button";
     unmonitorBtn.className = "ne-settings-btn ne-settings-btn--ghost ne-settings-btn--small";
-    unmonitorBtn.textContent = "Unmonitor";
+    unmonitorBtn.textContent = t("Unmonitor");
     unmonitorBtn.addEventListener("click", () =>
       neSettingsUnmonitorUser(user.username),
     );
@@ -437,7 +455,7 @@ export function neSettingsDisplayMonitoredKeywords(monitoredKeywords) {
   listEl.innerHTML = "";
   if (!monitoredKeywords?.length) {
     listEl.innerHTML =
-      '<p class="ne-settings-monitor-empty">You are not monitoring any keywords yet. Add one above or use the Keyword Monitor button on the torrent list.</p>';
+      `<p class="ne-settings-monitor-empty">${t("You are not monitoring any keywords yet. Add one above or use the Keyword Monitor button on the torrent list.")}</p>`;
     return;
   }
 
@@ -452,7 +470,7 @@ export function neSettingsDisplayMonitoredKeywords(monitoredKeywords) {
       <div class="ne-settings-monitor-item__info">
         <a class="ne-settings-monitor-item__title" href="${getKeywordSearchUrl(keywordObj.keyword)}" target="_blank" rel="noopener"></a>
         <div class="ne-settings-monitor-item__meta">
-          <span>Checked ${neSettingsFormatTimeAgo(lastChecked)}</span>
+          <span>${t("Checked {time}", { time: neSettingsFormatTimeAgo(lastChecked) })}</span>
         </div>
       </div>
     `;
@@ -462,7 +480,7 @@ export function neSettingsDisplayMonitoredKeywords(monitoredKeywords) {
     const unmonitorBtn = document.createElement("button");
     unmonitorBtn.type = "button";
     unmonitorBtn.className = "ne-settings-btn ne-settings-btn--ghost ne-settings-btn--small";
-    unmonitorBtn.textContent = "Unmonitor";
+    unmonitorBtn.textContent = t("Unmonitor");
     unmonitorBtn.addEventListener("click", () =>
       neSettingsRemoveMonitoredKeyword(keywordObj.keyword),
     );
@@ -584,8 +602,9 @@ export function neSettingsDisplayHighlightKeywords(highlightKeywords) {
   if (!rules.length) {
     const empty = document.createElement("p");
     empty.className = "ne-settings-monitor-empty";
-    empty.textContent =
-      "No highlight keywords yet. Add a phrase and color above to tint matching torrent rows.";
+    empty.textContent = t(
+      "No highlight keywords yet. Add a phrase and color above to tint matching torrent rows.",
+    );
     listEl.appendChild(empty);
     return;
   }
@@ -599,8 +618,8 @@ export function neSettingsDisplayHighlightKeywords(highlightKeywords) {
     colorInput.type = "color";
     colorInput.className = "ne-settings-hl-color";
     colorInput.value = rule.color;
-    colorInput.title = "Change highlight color";
-    colorInput.setAttribute("aria-label", `Color for ${rule.keyword}`);
+    colorInput.title = t("Change highlight color");
+    colorInput.setAttribute("aria-label", t("Color for {keyword}", { keyword: rule.keyword }));
     colorInput.addEventListener("change", () => {
       neSettingsUpdateHighlightColor(rule.keyword, colorInput.value);
     });
@@ -619,7 +638,7 @@ export function neSettingsDisplayHighlightKeywords(highlightKeywords) {
     removeBtn.type = "button";
     removeBtn.className =
       "ne-settings-btn ne-settings-btn--ghost ne-settings-btn--small";
-    removeBtn.textContent = "Remove";
+    removeBtn.textContent = t("Remove");
     removeBtn.addEventListener("click", () =>
       neSettingsRemoveHighlightKeyword(rule.keyword),
     );
@@ -713,23 +732,25 @@ export function neSettingsDisplayQbtCategories(categories, selectedDefault) {
 
   listEl.innerHTML = "";
   if (!categories.length) {
-    listEl.innerHTML = '<span class="ne-settings-empty">No categories defined.</span>';
+    listEl.innerHTML = `<span class="ne-settings-empty">${t("No categories defined.")}</span>`;
   } else {
     categories.forEach((cat) => {
       const item = document.createElement("div");
       item.className = "ne-settings-qbt-item";
-      item.innerHTML = `<span>${cat}</span>`;
+      const name = document.createElement("span");
+      name.textContent = cat;
+      item.appendChild(name);
       const rmBtn = document.createElement("button");
       rmBtn.type = "button";
       rmBtn.className = "ne-settings-qbt-remove";
-      rmBtn.textContent = "Remove";
+      rmBtn.textContent = t("Remove");
       rmBtn.addEventListener("click", () => neSettingsRemoveQbtCategory(cat));
       item.appendChild(rmBtn);
       listEl.appendChild(item);
     });
   }
 
-  selectEl.innerHTML = '<option value="">(none)</option>';
+  selectEl.innerHTML = `<option value="">${t("(none)")}</option>`;
   categories.forEach((cat) => {
     const opt = document.createElement("option");
     opt.value = cat;
@@ -745,17 +766,19 @@ export function neSettingsDisplayQbtTags(tags) {
 
   listEl.innerHTML = "";
   if (!tags.length) {
-    listEl.innerHTML = '<span class="ne-settings-empty">No tags defined.</span>';
+    listEl.innerHTML = `<span class="ne-settings-empty">${t("No tags defined.")}</span>`;
     return;
   }
   tags.forEach((tag) => {
     const item = document.createElement("div");
     item.className = "ne-settings-qbt-item";
-    item.innerHTML = `<span>${tag}</span>`;
+    const name = document.createElement("span");
+    name.textContent = tag;
+    item.appendChild(name);
     const rmBtn = document.createElement("button");
     rmBtn.type = "button";
     rmBtn.className = "ne-settings-qbt-remove";
-    rmBtn.textContent = "Remove";
+    rmBtn.textContent = t("Remove");
     rmBtn.addEventListener("click", () => neSettingsRemoveQbtTag(tag));
     item.appendChild(rmBtn);
     listEl.appendChild(item);
@@ -769,7 +792,7 @@ export function neSettingsDisplayDefaultTags(tags, defaultTags) {
   container.innerHTML = "";
   if (!tags.length) {
     container.innerHTML =
-      '<span class="ne-settings-empty">No tags defined yet.</span>';
+      `<span class="ne-settings-empty">${t("No tags defined yet.")}</span>`;
     return;
   }
   tags.forEach((tag) => {
@@ -1336,10 +1359,10 @@ export function neSettingsWireSimilarCache() {
       if (total) total.textContent = formatSimilarCacheBytes(usage.total);
       if (parts) {
         parts.textContent = [
-          `Identify ${formatSimilarCacheBytes(usage.identify)}`,
-          `Recs ${formatSimilarCacheBytes(usage.recs)}`,
-          `AnimeAPI ${formatSimilarCacheBytes(usage.animeapi)}`,
-          `Details ${formatSimilarCacheBytes(usage.details)}`,
+          t("Identify {size}", { size: formatSimilarCacheBytes(usage.identify) }),
+          t("Recs {size}", { size: formatSimilarCacheBytes(usage.recs) }),
+          t("AnimeAPI {size}", { size: formatSimilarCacheBytes(usage.animeapi) }),
+          t("Details {size}", { size: formatSimilarCacheBytes(usage.details) }),
         ].join(" · ");
       }
       usageEl.hidden = false;
@@ -1358,16 +1381,16 @@ export function neSettingsWireSimilarCache() {
 
   button.addEventListener("click", async () => {
     button.disabled = true;
-    if (status) status.textContent = "Clearing…";
+    if (status) status.textContent = t("Clearing…");
     try {
       await clearSimilarCaches();
       await renderUsage();
       if (status) {
         status.textContent =
-          "Cleared Similar caches. Open Similar again to fetch fresh results.";
+          t("Cleared Similar caches. Open Similar again to fetch fresh results.");
       }
     } catch {
-      if (status) status.textContent = "Couldn't clear the cache.";
+      if (status) status.textContent = t("Couldn't clear the cache.");
     } finally {
       button.disabled = false;
     }
@@ -1397,7 +1420,7 @@ export function neSettingsBuildPageHTML() {
   const navLinks = NE_SETTINGS_NAV_SECTIONS
     .map(
       (s) =>
-        `<button type="button" class="ne-settings-nav__link" data-target="${s.id}">${s.label}</button>`,
+        `<button type="button" class="ne-settings-nav__link" data-target="${s.id}">${t(s.label)}</button>`,
     )
     .join("");
 
@@ -1405,11 +1428,12 @@ export function neSettingsBuildPageHTML() {
   page.className = "ne-settings-page";
   page.innerHTML = `
     <header class="ne-settings-page__header">
+      <div class="ne-settings-page__language"></div>
       <h1>Nyaa Enhancer Settings</h1>
       <p class="ne-settings-page__subtitle">
-        Configure how Nyaa Enhancer behaves on this site.
-        Torrent client connection and API keys (ameNZB, TMDB) are managed in the
-        <strong>extension popup</strong> (click the extension icon in your browser toolbar).
+        <span data-i18n="Configure how Nyaa Enhancer behaves on this site.">Configure how Nyaa Enhancer behaves on this site.</span>
+        <span data-i18n="Torrent client connection and API keys (ameNZB, TMDB) are managed in the">Torrent client connection and API keys (ameNZB, TMDB) are managed in the</span>
+        <strong data-i18n="extension popup">extension popup</strong> <span data-i18n="(click the extension icon in your browser toolbar).">(click the extension icon in your browser toolbar).</span>
       </p>
       <div class="ne-settings-search">
         <div class="ne-settings-search__field">
@@ -1679,6 +1703,13 @@ export function neSettingsBuildPageHTML() {
       </div>
     </div>
   `;
+  neSettingsTranslateStaticText(page);
+  page.querySelectorAll("[placeholder], [title], [aria-label]").forEach((el) => {
+    ["placeholder", "title", "aria-label"].forEach((attribute) => {
+      const value = el.getAttribute(attribute);
+      if (value) el.setAttribute(attribute, t(value));
+    });
+  });
 
   const downloadRows = page.querySelector("#ne-settings-download-rows");
   downloadRows.append(
@@ -1810,10 +1841,13 @@ export async function handleSettingsPage() {
   const mainContainer = document.querySelector(".container > h1")?.parentElement;
   if (!mainContainer) return;
 
-  document.title = "Settings :: Nyaa";
+  document.title = t("Settings :: Nyaa");
   mainContainer.innerHTML = "";
 
   const settingsPage = neSettingsBuildPageHTML();
+  settingsPage
+    .querySelector(".ne-settings-page__language")
+    ?.append(createLanguageControl({ id: "ne-settings-language" }));
   mainContainer.appendChild(settingsPage);
 
   neSettingsWireToggles();
@@ -1852,27 +1886,21 @@ export function addSettingsNavItem() {
   const navList = document.querySelector(".nav.navbar-nav");
   if (!navList) return;
 
-  const existing = Array.from(navList.querySelectorAll("li")).find(
-    (li) => li.textContent.trim() === "Settings",
-  );
+  const existing = navList.querySelector('a[href="/settings"]')?.closest("li");
   if (existing) return;
 
   const settingsItem = document.createElement("li");
   const settingsLink = document.createElement("a");
   settingsLink.href = "/settings";
-  settingsLink.textContent = "Settings";
+  settingsLink.textContent = t("Settings");
   settingsItem.appendChild(settingsLink);
 
-  const changelogItem = Array.from(navList.querySelectorAll("li")).find(
-    (li) => li.textContent.trim() === "Changelog",
-  );
+  const changelogItem = navList.querySelector('a[href="/changelog"]')?.closest("li");
 
   if (changelogItem) {
     changelogItem.insertAdjacentElement("afterend", settingsItem);
   } else {
-    const rssItem = Array.from(navList.querySelectorAll("li")).find(
-      (li) => li.textContent.trim() === "RSS",
-    );
+    const rssItem = navList.querySelector('a[href="/?page=rss"]')?.closest("li");
     if (rssItem) {
       rssItem.insertAdjacentElement("afterend", settingsItem);
     } else {

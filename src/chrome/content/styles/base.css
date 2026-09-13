@@ -566,3 +566,36 @@ body.dark .version-link:hover {
 body.dark .changelog-repo {
   color: #999;
 }
+
+.ne-download-progress {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.ne-download-progress__status {
+  flex: 1;
+}
+
+.ne-download-progress__cancel {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 4px 8px;
+}
+
+.ne-download-progress__cancel:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.ne-language-control { display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-size:13px; min-width:0; }
+.ne-language-control label { margin:0; font-weight:500; white-space:nowrap; }
+.ne-language-control select { min-height:36px; max-width:100%; padding:5px 8px; border:1px solid #b8c4d0; border-radius:4px; background:#fff; color:#2c3e50; font:inherit; }
+.ne-language-control select:focus-visible { outline:3px solid #66afe9; outline-offset:2px; }
+.ne-language-control__error { flex-basis:100%; color:#a22; }
+body.dark .ne-language-control select { background:#2b2b2b; color:#e0e0e0; border-color:#666; }
+body.dark .ne-language-control__error { color:#ffaaaa; }

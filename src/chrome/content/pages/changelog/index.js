@@ -1,4 +1,5 @@
 import { getPreferences, loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { delay } from "../../internal.js";
 
 export async function showChangelog() {
@@ -30,22 +31,23 @@ export async function showChangelog() {
     container.className = "changelog-container";
     container.innerHTML = `
       <div class="changelog-header">
-        <span class="changelog-title">What's New</span>
+        <span class="changelog-title">${t("What's New")}</span>
         <span class="changelog-version">v${currentVersion}</span>
       </div>
       <div class="changelog-content">
-        • Enable period presets and automatic loading on sukebei.nyaa.si<br>
-        • Scroll near the bottom to load more results automatically<br>
-        • Sticky period controls with loading status and Pause / Resume<br>
-        • Errors and 10 pages without matches pause loading for you to resume
-        <div class="changelog-more">Plus more. <a href="/changelog">See the full changelog</a> for everything that's new.</div>
+        • ${t("Switch the extension UI between Japanese and English. Japanese is the default and your choice is remembered.")}<br>
+        • ${t("Cancel torrent-file batches while downloading, with a timeout for stalled files.")}<br>
+        • ${t("Scroll near the bottom to load more results automatically")}<br>
+        • ${t("Sticky period controls with loading status and Pause / Resume")}<br>
+        • ${t("Errors and 10 pages without matches pause loading for you to resume")}
+        <div class="changelog-more">${t("Plus more.")} <a href="/changelog">${t("See the full changelog")}</a> ${t("for everything that's new.")}</div>
       </div>
       <div class="changelog-actions">
-        <button class="changelog-button okay">Okay</button>
-        <button class="changelog-button dont-show">Don't show again</button>
+        <button class="changelog-button okay">${t("Okay")}</button>
+        <button class="changelog-button dont-show">${t("Don't show again")}</button>
       </div>
       <div class="changelog-footer">
-        <a href="/changelog" style="color: #337ab7; text-decoration: underline; font-size: 14px;">View changelog page</a>
+        <a href="/changelog" style="color: #337ab7; text-decoration: underline; font-size: 14px;">${t("View changelog page")}</a>
       </div>
     `;
 
@@ -89,7 +91,7 @@ export async function handleChangelogPage() {
   if (!mainContainer) return;
 
   // Update page title
-  document.title = "Changelog :: Nyaa";
+  document.title = `${t("Nyaa Enhancer Presets Changelog")} :: Nyaa`;
 
   // Clear the 404 content
   mainContainer.innerHTML = "";
@@ -98,30 +100,40 @@ export async function handleChangelogPage() {
   const changelogContent = document.createElement("div");
   changelogContent.className = "changelog-page";
   changelogContent.innerHTML = `
-    <h1>Nyaa Enhancer Presets Changelog</h1>
+    <h1>${t("Nyaa Enhancer Presets Changelog")}</h1>
+    <h2>${t("Fork changelog")}</h2>
+    <section class="version-entry">
+      <h2>Version 1.17.0 — 2026-09-14</h2>
+      <ul>
+        <li>${t("Switch the extension UI between Japanese and English. Japanese is the default and your choice is remembered.")}</li>
+        <li>${t("Changing the language reloads only the current page.")}</li>
+        <li>${t("Cancel torrent-file batches while downloading, with a timeout for stalled files.")}</li>
+      </ul>
+    </section>
     <section class="version-entry">
       <h2>Version 1.16.1 — 2026-09-14</h2>
       <ul>
-        <li>Enable the Chrome extension on sukebei.nyaa.si, including styles and module loading.</li>
-        <li>Keep searches and additional results on the current site's domain.</li>
+        <li>${t("Enable the Chrome extension on sukebei.nyaa.si, including styles and module loading.")}</li>
+        <li>${t("Keep searches and additional results on the current site's domain.")}</li>
       </ul>
     </section>
     <section class="version-entry">
       <h2>Version 1.16.0 — 2026-09-13</h2>
       <ul>
-        <li>Load the next results automatically when scrolling near the bottom, with sequential requests and duplicate removal.</li>
-        <li>Keep period presets, loading status, and Pause / Resume within reach while scrolling.</li>
-        <li>Remember manual auto-loading on/off choices. Errors, rate limits, timeouts, and ten pages without matches require explicit resume.</li>
-        <li>Start no new page requests while the tab is hidden; retain Show more for manual loading.</li>
+        <li>${t("Load the next results automatically when scrolling near the bottom, with sequential requests and duplicate removal.")}</li>
+        <li>${t("Keep period presets, loading status, and Pause / Resume within reach while scrolling.")}</li>
+        <li>${t("Remember manual auto-loading on/off choices. Errors, rate limits, timeouts, and ten pages without matches require explicit resume.")}</li>
+        <li>${t("Start no new page requests while the tab is hidden; retain Show more for manual loading.")}</li>
       </ul>
     </section>
     <div class="version-entry">
       <h2>Version 1.15.0 — 2026-09-13</h2>
-      <p>Independent GPL v3 fork by came815, based on Nyaa Enhancer by Arad119.</p>
-      <p>Added five rolling upload presets, persistent search conditions, and cancellable incremental loading.</p>
-      <p><a href="https://github.com/came815/nyaa-enhancer-presets">Source and modifications</a> ·
-      <a href="https://github.com/came815/nyaa-enhancer-presets/blob/main/LICENSE.txt">GPL v3 license</a>. No warranty.</p>
+      <p>${t("Independent GPL v3 fork by came815, based on Nyaa Enhancer by Arad119.")}</p>
+      <p>${t("Added five rolling upload presets, persistent search conditions, and cancellable incremental loading.")}</p>
+      <p><a href="https://github.com/came815/nyaa-enhancer-presets">${t("Source and modifications")}</a> ·
+      <a href="https://github.com/came815/nyaa-enhancer-presets/blob/main/LICENSE.txt">${t("GPL v3 license")}</a>${t(".")}${t("No warranty.")}</p>
     </div>
+    <h2>${t("Upstream changelog (English)")}</h2>
     <div class="changelog-repo">
       <p>This is an open source project. View the source code and contribute on 
         <a href="https://github.com/Arad119/Nyaa-Enhancer" target="_blank" class="repo-link">

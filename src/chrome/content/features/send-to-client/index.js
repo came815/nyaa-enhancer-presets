@@ -1,4 +1,5 @@
 import { loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { createProgressNotification, dismissProgressNotification, escapeHtml, getSelectedVisibleMagnetUrls, getVisibleMagnetUrls, setProgressNotificationStatus, showNotification } from "../../internal.js";
 
 // Shared helper: wires up the click → torrent client flow
@@ -29,17 +30,17 @@ export function getTorrentClientAuth(prefs) {
 export function getSendTorrentErrorMessage(result) {
   switch (result?.error) {
     case "already_exists":
-      return "Torrent already exists in your client.";
+      return t("Torrent already exists in your client.");
     case "wrong_client":
-      return "Wrong torrent client selected for this URL. Fix it in the extension popup.";
+      return t("Wrong torrent client selected for this URL. Fix it in the extension popup.");
     case "auth_failed":
-      return "Authentication failed — check your credentials.";
+      return t("Authentication failed — check your credentials.");
     case "auth_required":
-      return "Torrent client requires authentication.";
+      return t("Torrent client requires authentication.");
     case "permission_denied":
-      return "Missing network permission. Use Test Connection in the extension popup.";
+      return t("Missing network permission. Use Test Connection in the extension popup.");
     default:
-      return "Failed to send torrent. Check the client connection.";
+      return t("Failed to send torrent. Check the client connection.");
   }
 }
 
@@ -85,7 +86,7 @@ export async function sendMagnetsToClient(magnetUrls, prefs, category, tags) {
   let abortError = null;
   let nextIndex = 0;
 
-  progressNotification.textContent = `Sending: 0/${total}`;
+  progressNotification.textContent = t("Sending: {processed}/{total}", { processed: 0, total });
   setBatchSendButtonsBusy(true);
 
   const worker = async () => {
@@ -106,7 +107,7 @@ export async function sendMagnetsToClient(magnetUrls, prefs, category, tags) {
         failed++;
         if (SEND_FATAL_ERRORS.has(result?.error)) abortError = result;
       }
-      progressNotification.textContent = `Sending: ${processed}/${total}`;
+      progressNotification.textContent = t("Sending: {processed}/{total}", { processed, total });
     }
   };
 
@@ -122,7 +123,7 @@ export async function sendMagnetsToClient(magnetUrls, prefs, category, tags) {
     const skipped = total - processed;
     const extra =
       sent || alreadyExists
-        ? ` (${sent} sent, ${alreadyExists} already in client${skipped ? `, ${skipped} skipped` : ""}).`
+        ? t(" ({sent} sent, {alreadyExists} already in client{skipped}).", { sent, alreadyExists, skipped: skipped ? t(", {count} skipped", { count: skipped }) : "" })
         : "";
     progressNotification.textContent =
       getSendTorrentErrorMessage(abortError) + extra;
@@ -132,17 +133,17 @@ export async function sendMagnetsToClient(magnetUrls, prefs, category, tags) {
 
   if (sent === 0 && alreadyExists === 0) {
     setProgressNotificationStatus(progressNotification, "error");
-    progressNotification.textContent = `Failed to send ${failed} torrent${failed === 1 ? "" : "s"}.`;
+    progressNotification.textContent = t("Failed to send {count} torrent.", { count: failed });
   } else if (failed) {
     setProgressNotificationStatus(progressNotification, "warning");
-    progressNotification.textContent = `Sent ${sent} torrent${sent === 1 ? "" : "s"} (${alreadyExists} already in client, ${failed} failed).`;
+    progressNotification.textContent = t("Sent {sent} torrent ({alreadyExists} already in client, {failed} failed).", { sent, alreadyExists, failed });
   } else if (sent === 0 && alreadyExists) {
     setProgressNotificationStatus(progressNotification, "warning");
-    progressNotification.textContent = `All ${alreadyExists} torrent${alreadyExists === 1 ? " is" : "s are"} already in your client.`;
+    progressNotification.textContent = t("All {count} torrents are already in your client.", { count: alreadyExists });
   } else if (alreadyExists) {
-    progressNotification.textContent = `Sent ${sent} torrent${sent === 1 ? "" : "s"} (${alreadyExists} already in client).`;
+    progressNotification.textContent = t("Sent {sent} torrent ({alreadyExists} already in client).", { sent, alreadyExists });
   } else {
-    progressNotification.textContent = `Sent ${sent} torrent${sent === 1 ? "" : "s"} to client!`;
+    progressNotification.textContent = t("Sent {count} torrent to client!", { count: sent });
   }
   dismissProgressNotification(progressNotification, 4000);
 }
@@ -189,7 +190,7 @@ export async function sendVisibleTorrentsToClient(magnetUrls, emptyMessage) {
   const prefs = await loadStoredPreferences();
   if (!prefs.torrentClientUrl) {
     showNotification(
-      "No torrent client configured. Set it up in the extension popup.",
+      t("No torrent client configured. Set it up in the extension popup."),
       false,
     );
     return;
@@ -208,14 +209,14 @@ export async function sendVisibleTorrentsToClient(magnetUrls, emptyMessage) {
 export function sendSelectedTorrents() {
   return sendVisibleTorrentsToClient(
     getSelectedVisibleMagnetUrls(),
-    "No visible torrents selected!",
+    t("No visible torrents selected!"),
   );
 }
 
 export function sendAllVisibleTorrents() {
   return sendVisibleTorrentsToClient(
     getVisibleMagnetUrls(),
-    "No torrents found!",
+    t("No torrents found!"),
   );
 }
 
@@ -227,7 +228,7 @@ export function wireSendTorrentAction(element, magnetUrl) {
 
     if (!currentPrefs.torrentClientUrl) {
       showNotification(
-        "No torrent client configured. Set it up in the extension popup.",
+        t("No torrent client configured. Set it up in the extension popup."),
         false,
       );
       return;
@@ -270,7 +271,7 @@ export function wireSendTorrentAction(element, magnetUrl) {
         return;
       }
 
-      showNotification("Torrent sent to client!", true);
+      showNotification(t("Torrent sent to client!"), true);
     };
 
     if (!isQbt) {
@@ -294,7 +295,7 @@ export function createSendListLink(magnetUrl) {
   const sendLink = document.createElement("a");
   sendLink.href = "#";
   sendLink.className = "link-action-send";
-  sendLink.title = "Send to torrent client";
+  sendLink.title = t("Send to torrent client");
   sendLink.innerHTML = '<i class="fa fa-fw fa-cloud-upload"></i>';
   wireSendTorrentAction(sendLink, magnetUrl);
   return sendLink;
@@ -304,8 +305,8 @@ export function createSendListLink(magnetUrl) {
 export function createSendButton(magnetUrl, extraStyles = {}) {
   const sendButton = document.createElement("button");
   sendButton.className = "magnet-button send-torrent-button";
-  sendButton.title = "Send to torrent client";
-  sendButton.innerHTML = '<i class="fa fa-cloud-upload"></i> Send';
+  sendButton.title = t("Send to torrent client");
+  sendButton.innerHTML = `<i class="fa fa-cloud-upload"></i> ${t("Send")}`;
   sendButton.style.fontFamily = "Segoe UI, Tahoma, sans-serif";
   sendButton.style.fontWeight = "500";
   Object.assign(sendButton.style, extraStyles);
@@ -353,14 +354,14 @@ export function openQbtCategoryTagModal(prefs, onConfirm, onCancel) {
 
   modal.innerHTML = `
     <div class="qbt-modal-header">
-      <h3>Send to qBittorrent</h3>
-      <button type="button" class="qbt-modal-close" id="qbtModalCloseBtn" aria-label="Close">&times;</button>
+      <h3>${t("Send to qBittorrent")}</h3>
+      <button type="button" class="qbt-modal-close" id="qbtModalCloseBtn" aria-label="${t("Close")}">&times;</button>
     </div>
     <div class="qbt-modal-body">
       <div class="qbt-modal-field">
-        <label class="qbt-modal-label">Category</label>
+        <label class="qbt-modal-label">${t("Category")}</label>
         <select id="qbtModalCategorySelect" class="qbt-modal-select">
-          <option value="">(none)</option>
+          <option value="">${t("(none)")}</option>
           ${categories
             .map(
               (c) =>
@@ -372,7 +373,7 @@ export function openQbtCategoryTagModal(prefs, onConfirm, onCancel) {
         </select>
       </div>
       <div class="qbt-modal-field">
-        <label class="qbt-modal-label">Tags${
+        <label class="qbt-modal-label">${t("Tags")}${
           tags.length ? ` (${tags.length})` : ""
         }</label>
         <div class="qbt-modal-tags" id="qbtModalTagsContainer">
@@ -380,27 +381,27 @@ export function openQbtCategoryTagModal(prefs, onConfirm, onCancel) {
             tags.length
               ? tags
                   .map(
-                    (t) => `
+                    (tag) => `
                 <label class="qbt-tag-item">
-                  <input type="checkbox" value="${escapeHtml(t)}" ${
-                    defaultTags.includes(t) ? "checked" : ""
+                  <input type="checkbox" value="${escapeHtml(tag)}" ${
+                    defaultTags.includes(tag) ? "checked" : ""
                   } />
-                  <span>${escapeHtml(t)}</span>
+                  <span>${escapeHtml(tag)}</span>
                 </label>
               `,
                   )
                   .join("")
-              : `<span class="qbt-modal-empty">No tags defined. Add some on the <a href="/settings">Settings page</a>.</span>`
+              : `<span class="qbt-modal-empty">${t('No tags defined. Add some on the <a href="/settings">Settings page</a>.')}</span>`
           }
         </div>
       </div>
       <div class="qbt-modal-hint">
-        Your last selection will be remembered next time.
+        ${t("Your last selection will be remembered next time.")}
       </div>
     </div>
     <div class="qbt-modal-footer">
-      <button type="button" class="qbt-modal-btn qbt-modal-btn-cancel" id="qbtModalCancelBtn">Cancel</button>
-      <button type="button" class="qbt-modal-btn qbt-modal-btn-confirm" id="qbtModalConfirmBtn">Send Torrent</button>
+      <button type="button" class="qbt-modal-btn qbt-modal-btn-cancel" id="qbtModalCancelBtn">${t("Cancel")}</button>
+      <button type="button" class="qbt-modal-btn qbt-modal-btn-confirm" id="qbtModalConfirmBtn">${t("Send Torrent")}</button>
     </div>
   `;
 

@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { areLinkActionsOrdered, ensureDescriptionTab, fetchUrlViaBackground, getOrCreateDescriptionPanelBody, getTorrentInfoHashFromRow, getTorrentLinkCell, isNyaaTorrentDataRow, showNotification, switchDescriptionPanelTab, updateTorrentRowLinkActions } from "../../internal.js";
 import {
   mergeAnimetoshoSeries,
@@ -126,7 +127,7 @@ export function createAnimetoshoListAnchor(infoHash, useNewATDomain) {
   const atLink = document.createElement("a");
   atLink.className = "link-action-at";
   atLink.target = "_blank";
-  atLink.title = "Open on Animetosho";
+  atLink.title = t("Open on Animetosho");
   atLink.innerHTML = '<i class="fa fa-fw fa-external-link"></i>';
   atLink.style.visibility = "hidden";
   resolveAnimetoshoViewLink(infoHash, useNewATDomain).then((viewUrl) => {
@@ -194,7 +195,7 @@ export async function refreshAnimetoshoViewPageLink() {
     atAnchor.style.pointerEvents = "";
   } else {
     atAnchor.removeAttribute("href");
-    atAnchor.textContent = "Not found on AnimeTosho";
+    atAnchor.textContent = t("Not found on AnimeTosho");
     atAnchor.style.color = "#999";
     atAnchor.style.pointerEvents = "none";
   }
@@ -269,7 +270,7 @@ export async function addAnimetoshoToViewPage() {
     atAnchor.href = viewUrl;
     atAnchor.textContent = viewUrl;
   } else {
-    atAnchor.textContent = "Not found on AnimeTosho";
+    atAnchor.textContent = t("Not found on AnimeTosho");
     atAnchor.style.color = "#999";
     atAnchor.style.pointerEvents = "none";
   }
@@ -314,7 +315,7 @@ export async function addAnimetoshoComments() {
   const loadingMsg = document.createElement("p");
   loadingMsg.className = "comment-panel";
   loadingMsg.style.padding = "10px";
-  loadingMsg.textContent = "Loading AnimeTosho comments...";
+  loadingMsg.textContent = t("Loading AnimeTosho comments...");
   toshoCommentsContainer.appendChild(loadingMsg);
 
   try {
@@ -342,7 +343,7 @@ export async function addAnimetoshoComments() {
       const noComments = document.createElement("p");
       noComments.className = "comment-panel";
       noComments.style.padding = "10px";
-      noComments.textContent = "No comments found on AnimeTosho.";
+      noComments.textContent = t("No comments found on AnimeTosho.");
       toshoCommentsContainer.appendChild(noComments);
     } else {
       function filterComments(node) {
@@ -430,7 +431,7 @@ export async function addAnimetoshoComments() {
     toshoLink.innerHTML = `<a href="${toshoUrl}" target="_blank" rel="noopener noreferrer">Please visit AnimeTosho to participate</a>`;
     toshoCommentsContainer.appendChild(toshoLink);
   } catch (err) {
-    loadingMsg.textContent = `Failed to load AnimeTosho comments: ${err.message}`;
+    loadingMsg.textContent = t("Failed to load AnimeTosho comments: {message}", { message: err.message });
   }
 }
 
@@ -1101,7 +1102,7 @@ export function renderATFileinfoBody(body, fileInfo, filename) {
   const openBtn = document.createElement("button");
   openBtn.type = "button";
   openBtn.className = "nyaa-enhancer-at-fileinfo-btn";
-  openBtn.textContent = "Open in New Tab";
+  openBtn.textContent = t("Open in New Tab");
   openBtn.addEventListener("click", () =>
     openATFileinfoTab(fileInfo, filename),
   );
@@ -1110,12 +1111,12 @@ export function renderATFileinfoBody(body, fileInfo, filename) {
   const copyBtn = document.createElement("button");
   copyBtn.type = "button";
   copyBtn.className = "nyaa-enhancer-at-fileinfo-btn";
-  copyBtn.textContent = "Copy to Clipboard";
+  copyBtn.textContent = t("Copy to Clipboard");
   copyBtn.addEventListener("click", () => {
     navigator.clipboard
       .writeText(fileInfo)
-      .then(() => showNotification("FileInfo copied to clipboard!", true))
-      .catch(() => showNotification("Failed to copy FileInfo", false));
+      .then(() => showNotification(t("FileInfo copied to clipboard!"), true))
+      .catch(() => showNotification(t("Failed to copy FileInfo"), false));
   });
   toolbar.appendChild(copyBtn);
 
@@ -1174,7 +1175,7 @@ export function renderATAttachmentsBody(body, groups) {
 
   if (groups.file.length) {
     container.appendChild(
-      renderATAttachmentGroupRow("Video File", groups.file, {
+      renderATAttachmentGroupRow(t("Video File"), groups.file, {
         separator: groups.file.some((item) => item.text.includes(" · "))
           ? ", "
           : " | ",
@@ -1183,14 +1184,14 @@ export function renderATAttachmentsBody(body, groups) {
   }
   if (groups.subtitles.length) {
     container.appendChild(
-      renderATAttachmentGroupRow("Subtitles", groups.subtitles),
+      renderATAttachmentGroupRow(t("Subtitles"), groups.subtitles),
     );
   }
   if (groups.audio.length) {
-    container.appendChild(renderATAttachmentGroupRow("Audio", groups.audio));
+    container.appendChild(renderATAttachmentGroupRow(t("Audio"), groups.audio));
   }
   if (groups.video.length) {
-    container.appendChild(renderATAttachmentGroupRow("Video", groups.video));
+    container.appendChild(renderATAttachmentGroupRow(t("Video"), groups.video));
   }
 
   body.appendChild(container);
@@ -1524,7 +1525,7 @@ export function openATScreenshotModal(screenshots, initialIndex, trackNum) {
   modalOverlay.className = "nyaa-enhancer-screenshot-modal";
   modalOverlay.setAttribute("role", "dialog");
   modalOverlay.setAttribute("aria-modal", "true");
-  modalOverlay.setAttribute("aria-label", "Screenshot viewer");
+  modalOverlay.setAttribute("aria-label", t("Screenshots"));
 
   const originalScrollY = window.scrollY;
   document.body.style.position = "fixed";
@@ -1553,16 +1554,16 @@ export function openATScreenshotModal(screenshots, initialIndex, trackNum) {
   openButton.type = "button";
   openButton.className = "nyaa-enhancer-screenshot-viewer-btn";
   openButton.innerHTML =
-    '<i class="fa fa-external-link" aria-hidden="true"></i><span>Open</span>';
-  openButton.title = "Open in New Tab";
+    `<i class="fa fa-external-link" aria-hidden="true"></i><span>${t("Open")}</span>`;
+  openButton.title = t("Open in New Tab");
 
   const closeButton = document.createElement("button");
   closeButton.type = "button";
   closeButton.className =
     "nyaa-enhancer-screenshot-viewer-btn nyaa-enhancer-screenshot-viewer-btn-icon";
   closeButton.innerHTML = '<i class="fa fa-times" aria-hidden="true"></i>';
-  closeButton.title = "Close";
-  closeButton.setAttribute("aria-label", "Close");
+  closeButton.title = t("Close");
+  closeButton.setAttribute("aria-label", t("Close"));
 
   const stage = document.createElement("div");
   stage.className = "nyaa-enhancer-screenshot-viewer-stage";
@@ -1747,7 +1748,7 @@ export function renderATScreenshotsGrid(body, screenshots, subtitles, isXyz) {
   trackSelect.className = "nyaa-enhancer-at-track-select";
   const noTrackOption = document.createElement("option");
   noTrackOption.value = "";
-  noTrackOption.textContent = "No Subtitle Track";
+  noTrackOption.textContent = t("No Subtitle Track");
   trackSelect.appendChild(noTrackOption);
 
   if (!isXyz) {
@@ -1882,7 +1883,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
         getOrCreateDescriptionPanelBody(panel, "atattachments"))
       : null;
 
-    const loadingMessage = "Loading from AnimeTosho…";
+    const loadingMessage = t("Loading from AnimeTosho…");
     if (!fromEpisodePick) {
       if (screenshotBody)
         setAnimetoshoTabStatus(screenshotBody, loadingMessage);
@@ -1893,7 +1894,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
 
     if (!isAnimetoshoSupportedViewPage()) {
       const msg =
-        "AnimeTosho episode data is only available for anime (English-translated, Non-English-translated, or Raw).";
+        t("AnimeTosho episode data is only available for anime (English-translated, Non-English-translated, or Raw).");
       if (screenshotBody) setAnimetoshoTabStatus(screenshotBody, msg);
       if (fileinfoBody) setAnimetoshoTabStatus(fileinfoBody, msg);
       if (attachmentsBody) setAnimetoshoTabStatus(attachmentsBody, msg);
@@ -1902,7 +1903,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
 
     const infoHash = document.querySelector("kbd")?.textContent?.trim();
     if (!infoHash) {
-      const msg = "Info hash not found.";
+      const msg = t("Info hash not found.");
       if (screenshotBody) setAnimetoshoTabStatus(screenshotBody, msg);
       if (fileinfoBody) setAnimetoshoTabStatus(fileinfoBody, msg);
       if (attachmentsBody) setAnimetoshoTabStatus(attachmentsBody, msg);
@@ -1916,7 +1917,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
     if (fetchId !== atEpisodeFetchId) return;
 
     if (!record?.viewUrl) {
-      const msg = "Not found on AnimeTosho.";
+      const msg = t("Not found on AnimeTosho.");
       if (screenshotBody) setAnimetoshoTabStatus(screenshotBody, msg);
       if (fileinfoBody) setAnimetoshoTabStatus(fileinfoBody, msg);
       if (attachmentsBody) setAnimetoshoTabStatus(attachmentsBody, msg);
@@ -1932,7 +1933,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
     if (fetchId !== atEpisodeFetchId) return;
 
     if (!atEpisodeSelection.epId) {
-      const msg = "No episode file found on AnimeTosho.";
+      const msg = t("No episode file found on AnimeTosho.");
       if (screenshotBody) setAnimetoshoTabStatus(screenshotBody, msg);
       if (fileinfoBody) setAnimetoshoTabStatus(fileinfoBody, msg);
       if (attachmentsBody) setAnimetoshoTabStatus(attachmentsBody, msg);
@@ -1967,7 +1968,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
     if (fetchId !== atEpisodeFetchId) return;
 
     if (!episodeViewHtml) {
-      const msg = "Failed to load episode data from AnimeTosho.";
+      const msg = t("Failed to load episode data from AnimeTosho.");
       if (screenshotBody) setAnimetoshoTabStatus(screenshotBody, msg);
       if (fileinfoBody) setAnimetoshoTabStatus(fileinfoBody, msg);
       if (attachmentsBody) setAnimetoshoTabStatus(attachmentsBody, msg);
@@ -1999,7 +2000,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
       } else {
         setAnimetoshoTabStatus(
           fileinfoBody,
-          "No FileInfo on AnimeTosho for this episode.",
+          t("No FileInfo on AnimeTosho for this episode."),
         );
       }
     }
@@ -2019,7 +2020,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
       } else {
         setAnimetoshoTabStatus(
           attachmentsBody,
-          "No downloads on AnimeTosho for this episode.",
+          t("No downloads on AnimeTosho for this episode."),
         );
       }
     }
@@ -2040,7 +2041,7 @@ export async function refreshAnimetoshoEpisodeFeatures(prefs, options = {}) {
       if (!screenshots.length) {
         setAnimetoshoTabStatus(
           screenshotBody,
-          "No screenshots on AnimeTosho for this episode.",
+          t("No screenshots on AnimeTosho for this episode."),
         );
       } else {
         const screenshotSubtitles = record.useNewATDomain

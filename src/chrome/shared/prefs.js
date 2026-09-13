@@ -27,6 +27,7 @@ export const LOCAL_PREF_KEYS = new Set([
 ]);
 
 export const PREF_DEFAULTS = {
+  uiLanguage: "ja",
   useDisplayName: true,
   useZip: true,
   showButtons: true,

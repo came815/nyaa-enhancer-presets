@@ -1,4 +1,5 @@
 import { loadStoredPreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { buildExternalServiceLinkHtml, buildNekoBTMetaRow, escapeNekoBTHtml, fetchUrlViaBackground, formatNekoBTBytes, isNekoBTSupportedViewPage, setAnimetoshoTabStatus, switchDescriptionPanelTab } from "../../internal.js";
 
 // ── Tsukihime (view page links + description section) ───────────────────────
@@ -181,18 +182,18 @@ export async function toggleTsukihimeFileMediainfo(btn) {
 
   if (!panel.hidden && panel.dataset.loaded === "true") {
     panel.hidden = true;
-    btn.textContent = "Show MediaInfo";
+    btn.textContent = t("Show MediaInfo");
     return;
   }
 
   panel.hidden = false;
   if (panel.dataset.loaded === "true") {
-    btn.textContent = "Hide MediaInfo";
+    btn.textContent = t("Hide MediaInfo");
     return;
   }
 
   panel.innerHTML =
-    '<p class="nyaa-enhancer-nekobt-status">Loading MediaInfo…</p>';
+    `<p class="nyaa-enhancer-nekobt-status">${t("Loading MediaInfo…")}</p>`;
   btn.disabled = true;
 
   const mediainfo = await fetchTsukihimeFileMediainfo(torrentId, fileId);
@@ -200,24 +201,24 @@ export async function toggleTsukihimeFileMediainfo(btn) {
 
   if (!mediainfo) {
     panel.innerHTML =
-      '<p class="nyaa-enhancer-nekobt-status">MediaInfo not available.</p>';
+      `<p class="nyaa-enhancer-nekobt-status">${t("MediaInfo not available.")}</p>`;
     panel.dataset.loaded = "true";
-    btn.textContent = "Show MediaInfo";
+    btn.textContent = t("Show MediaInfo");
     return;
   }
 
   panel.innerHTML = `<pre class="nyaa-enhancer-nekobt-mediainfo">${escapeNekoBTHtml(mediainfo)}</pre>`;
   panel.dataset.loaded = "true";
-  btn.textContent = "Hide MediaInfo";
+  btn.textContent = t("Hide MediaInfo");
 }
 
 export function renderTsukihimeFileCard(file, torrentId) {
   const displayName =
-    file.filename?.split("/").pop() || file.filename || "Unknown file";
+    file.filename?.split("/").pop() || file.filename || t("Unknown file");
   const linksHtml = renderTsukihimeLinkChips(file.links);
   const audioLinksHtml = file.links_audio
     ? `<div class="nyaa-enhancer-tsukihime-link-group">
-        <span class="nyaa-enhancer-tsukihime-link-label">Audio downloads</span>
+        <span class="nyaa-enhancer-tsukihime-link-label">${t("Audio downloads")}</span>
         ${renderTsukihimeLinkChips(file.links_audio)}
       </div>`
     : "";
@@ -247,7 +248,7 @@ export function renderTsukihimeFileCard(file, torrentId) {
 
   const mediainfoBtnHtml =
     torrentId != null && file.id != null
-      ? `<button type="button" class="nyaa-enhancer-tsukihime-mediainfo-btn" data-torrent-id="${escapeNekoBTHtml(String(torrentId))}" data-file-id="${escapeNekoBTHtml(String(file.id))}">Show MediaInfo</button>`
+      ? `<button type="button" class="nyaa-enhancer-tsukihime-mediainfo-btn" data-torrent-id="${escapeNekoBTHtml(String(torrentId))}" data-file-id="${escapeNekoBTHtml(String(file.id))}">${t("Show MediaInfo")}</button>`
       : "";
 
   return `
@@ -261,7 +262,7 @@ export function renderTsukihimeFileCard(file, torrentId) {
       ${
         linksHtml
           ? `<div class="nyaa-enhancer-tsukihime-link-group">
-              <span class="nyaa-enhancer-tsukihime-link-label">Video downloads</span>
+              <span class="nyaa-enhancer-tsukihime-link-label">${t("Video downloads")}</span>
               ${linksHtml}
             </div>`
           : ""
@@ -270,7 +271,7 @@ export function renderTsukihimeFileCard(file, torrentId) {
       ${
         attachmentsHtml
           ? `<div class="nyaa-enhancer-tsukihime-link-group">
-              <span class="nyaa-enhancer-tsukihime-link-label">Attachments</span>
+              <span class="nyaa-enhancer-tsukihime-link-label">${t("Attachments")}</span>
               ${attachmentsHtml}
             </div>`
           : ""
@@ -281,7 +282,7 @@ export function renderTsukihimeFileCard(file, torrentId) {
 
 export function renderTsukihimePanelContent(data) {
   const viewUrl = `https://tsukihime.org/view/${encodeURIComponent(data.id)}`;
-  const titleHtml = `<a href="${escapeNekoBTHtml(viewUrl)}" rel="noopener noreferrer nofollow" target="_blank">${escapeNekoBTHtml(data.name || "View on Tsukihime")}</a>`;
+  const titleHtml = `<a href="${escapeNekoBTHtml(viewUrl)}" rel="noopener noreferrer nofollow" target="_blank">${escapeNekoBTHtml(data.name || t("View on Tsukihime"))}</a>`;
 
   const anime = data.anime;
   let animeHtml = null;
@@ -302,53 +303,53 @@ export function renderTsukihimePanelContent(data) {
   const stats = aggregateTsukihimeTrackerStats(data.trackers);
 
   let meta = "";
-  meta += buildNekoBTMetaRow("Title", titleHtml);
-  if (animeHtml) meta += buildNekoBTMetaRow("Anime", animeHtml);
-  if (groupHtml) meta += buildNekoBTMetaRow("Group", groupHtml);
+  meta += buildNekoBTMetaRow(t("Title"), titleHtml);
+  if (animeHtml) meta += buildNekoBTMetaRow(t("Anime"), animeHtml);
+  if (groupHtml) meta += buildNekoBTMetaRow(t("Group"), groupHtml);
   if (stats) {
     meta += buildNekoBTMetaRow(
-      "Swarm",
+      t("Swarm"),
       `${escapeNekoBTHtml(stats.seeders)} seeders · ${escapeNekoBTHtml(stats.leechers)} leechers · ${escapeNekoBTHtml(stats.complete)} completed`,
     );
   }
   meta += buildNekoBTMetaRow(
-    "Total size",
+    t("Total size"),
     escapeNekoBTHtml(formatNekoBTBytes(data.totalsize)),
   );
   if (data.filecount != null) {
-    meta += buildNekoBTMetaRow("Files", escapeNekoBTHtml(data.filecount));
+    meta += buildNekoBTMetaRow(t("Files"), escapeNekoBTHtml(data.filecount));
   }
   if (data.episode_no != null && data.episode_no !== "") {
-    meta += buildNekoBTMetaRow("Episode", escapeNekoBTHtml(data.episode_no));
+    meta += buildNekoBTMetaRow(t("Episode"), escapeNekoBTHtml(data.episode_no));
   }
   meta += buildNekoBTMetaRow(
-    "Audio",
+    t("Audio"),
     escapeNekoBTHtml(formatTsukihimeLangCodes(data.audiolangs)),
   );
   meta += buildNekoBTMetaRow(
-    "Subtitles",
+    t("Subtitles"),
     escapeNekoBTHtml(formatTsukihimeLangCodes(data.sublangs)),
   );
   if (data.source_date) {
     meta += buildNekoBTMetaRow(
-      "Source date",
+      t("Source date"),
       escapeNekoBTHtml(formatTsukihimeTimestamp(data.source_date)),
     );
   }
   if (data.added_date) {
     meta += buildNekoBTMetaRow(
-      "Added",
+      t("Added"),
       escapeNekoBTHtml(formatTsukihimeTimestamp(data.added_date)),
     );
   }
   if (data.state) {
-    meta += buildNekoBTMetaRow("State", escapeNekoBTHtml(data.state));
+    meta += buildNekoBTMetaRow(t("State"), escapeNekoBTHtml(data.state));
   }
   if (data.has_nzb != null) {
-    meta += buildNekoBTMetaRow("NZB available", data.has_nzb ? "Yes" : "No");
+    meta += buildNekoBTMetaRow(t("NZB available"), data.has_nzb ? t("Yes") : t("No"));
   }
   meta += buildNekoBTMetaRow(
-    "Info hash",
+    t("Info hash"),
     `<code>${escapeNekoBTHtml(data.btih || "")}</code>`,
   );
 
@@ -521,12 +522,12 @@ export async function updateTsukihimeDescriptionSection() {
   ensureTsukihimeDescriptionTab(panel);
   const body = getOrCreateTsukihimePanelBody(panel);
   ensureTsukihimePanelClickHandler(body);
-  setAnimetoshoTabStatus(body, "Loading Tsukihime data…");
+  setAnimetoshoTabStatus(body, t("Loading Tsukihime data…"));
 
   const infoHash = document.querySelector("kbd")?.textContent?.trim();
   if (!infoHash) {
     if (fetchId !== tsukihimeSectionFetchId) return;
-    setAnimetoshoTabStatus(body, "Could not read info hash.");
+    setAnimetoshoTabStatus(body, t("Could not read info hash."));
     return;
   }
 
@@ -534,7 +535,7 @@ export async function updateTsukihimeDescriptionSection() {
   if (fetchId !== tsukihimeSectionFetchId) return;
 
   if (!data) {
-    setAnimetoshoTabStatus(body, "Not found on Tsukihime.");
+    setAnimetoshoTabStatus(body, t("Not found on Tsukihime."));
     return;
   }
 
@@ -563,7 +564,7 @@ export async function addTsukihimeToViewPage() {
     const { link: tsukihimeLink } = await fetchTsukihimeTorrent(infoHash);
     const tsukihimeContent = buildExternalServiceLinkHtml(
       tsukihimeLink,
-      "Not found on Tsukihime",
+      t("Not found on Tsukihime."),
     );
 
     const anchor = getTsukihimeRowAnchor();

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nyaa Enhancer Presets",
-  "version": "1.16.1",
+  "version": "1.17.0",
   "description": "Nyaa Enhancer fork with upload period presets, seeder sorting, automatic scroll loading and pause/resume controls.",
   "background": {
     "service_worker": "background/index.js",

@@ -1,4 +1,5 @@
 import { loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
+import { t } from "../../../shared/i18n.js";
 import { updateShowMoreButtonState } from "../show-more/index.js";
 import { failsCompletedDownloadsFilter, getCompletedDownloadsFromRow, getQuickSearchClientFilterOptions, getTitleFromRow, handleSettingChange, isNyaaTorrentDataRow, isNyaaTorrentListPage, shouldHideRowByQuickSearch, showNotification, syncSelectionToVisibleRows, updateTorrentRowLinkActions } from "../../internal.js";
 
@@ -102,27 +103,26 @@ export function failsMinSeedersFilter(prefs, seeders) {
 
 export function getActiveFilterLabels(prefs) {
   const labels = [];
-  if (prefs.hideDeadTorrents) labels.push("dead torrents");
+  if (prefs.hideDeadTorrents) labels.push(t("dead torrents"));
   if (prefs.minSeedersFilterEnabled && getMinSeedersThreshold(prefs) > 0) {
-    labels.push("minimum seeders");
+    labels.push(t("minimum seeders"));
   }
   if (prefs.keywordFilterEnabled && prefs.keywords.length > 0) {
-    labels.push("blocked keywords");
+    labels.push(t("blocked keywords"));
   }
-  if (prefs.fileSizeFilterEnabled) labels.push("file size");
-  if (prefs.completedDownloadsFilterEnabled) labels.push("completed downloads");
+  if (prefs.fileSizeFilterEnabled) labels.push(t("file size"));
+  if (prefs.completedDownloadsFilterEnabled) labels.push(t("completed downloads"));
   return labels;
 }
 
 export function formatFilterHiddenNotificationMessage(hiddenCount, activeFilterLabels) {
-  const torrentWord = hiddenCount === 1 ? "torrent" : "torrents";
   if (activeFilterLabels.length === 1) {
-    return `Hid ${hiddenCount} ${torrentWord} matching your ${activeFilterLabels[0]} filter`;
+    return t("Hid {count} torrent matching your {filter} filter", { count: hiddenCount, filter: activeFilterLabels[0] });
   }
   if (activeFilterLabels.length > 1) {
-    return `Hid ${hiddenCount} ${torrentWord} matching your filters (${activeFilterLabels.join(", ")})`;
+    return t("Hid {count} torrents matching your filters ({filters})", { count: hiddenCount, filters: activeFilterLabels.join(", ") });
   }
-  return `Hid ${hiddenCount} ${torrentWord} matching your active filters`;
+  return t("Hid {count} torrents matching your active filters", { count: hiddenCount });
 }
 
 export function shouldHideRowByFilters(row, prefs) {
@@ -445,7 +445,7 @@ export function neDisplayFilterKeywords(keywords) {
   if (!keywords.length) {
     const empty = document.createElement("p");
     empty.className = "ne-filters-panel__empty-keywords";
-    empty.textContent = "No keywords added yet.";
+  empty.textContent = t("No keywords added yet.");
     keywordsList.appendChild(empty);
     return;
   }
@@ -455,7 +455,7 @@ export function neDisplayFilterKeywords(keywords) {
     item.className = "ne-filters-panel__keyword-item";
     item.innerHTML = `
       <span class="ne-filters-panel__keyword-text"></span>
-      <button type="button" class="ne-filters-panel__keyword-remove" title="Remove keyword">×</button>
+      <button type="button" class="ne-filters-panel__keyword-remove" title="${t("Remove keyword")}">×</button>
     `;
     item.querySelector(".ne-filters-panel__keyword-text").textContent = keyword;
     item
@@ -648,38 +648,38 @@ export async function addFiltersPanel() {
   panel.className = "ne-filters-panel";
   panel.innerHTML = `
     <button type="button" class="ne-filters-panel__header" aria-expanded="false">
-      <span class="ne-filters-panel__title"><i class="fa fa-filter" aria-hidden="true"></i> Filters</span>
+      <span class="ne-filters-panel__title"><i class="fa fa-filter" aria-hidden="true"></i> ${t("Filters")}</span>
       <span class="ne-filters-panel__badge" hidden>0</span>
       <span class="ne-filters-panel__chevron" aria-hidden="true"></span>
     </button>
     <div class="ne-filters-panel__body" hidden>
       <div class="ne-filters-panel__toggles">
         <div class="ne-filters-panel__toggle-item">
-          <span class="ne-filters-panel__toggle-label">Hide dead torrents (0 S/L)</span>
+          <span class="ne-filters-panel__toggle-label">${t("Hide dead torrents (0 S/L)")}</span>
           <button type="button" class="ne-filters-panel__toggle" data-ne-toggle="hideDeadTorrents" role="switch" aria-checked="false">
             <span class="ne-filters-panel__toggle-indicator"></span>
           </button>
         </div>
         <div class="ne-filters-panel__toggle-item">
-          <span class="ne-filters-panel__toggle-label">Filter by minimum seeders</span>
+          <span class="ne-filters-panel__toggle-label">${t("Filter by minimum seeders")}</span>
           <button type="button" class="ne-filters-panel__toggle" data-ne-toggle="minSeedersFilter" role="switch" aria-checked="false">
             <span class="ne-filters-panel__toggle-indicator"></span>
           </button>
         </div>
         <div class="ne-filters-panel__toggle-item">
-          <span class="ne-filters-panel__toggle-label">Enable keyword filtering</span>
+          <span class="ne-filters-panel__toggle-label">${t("Enable keyword filtering")}</span>
           <button type="button" class="ne-filters-panel__toggle" data-ne-toggle="keywordFilter" role="switch" aria-checked="false">
             <span class="ne-filters-panel__toggle-indicator"></span>
           </button>
         </div>
         <div class="ne-filters-panel__toggle-item">
-          <span class="ne-filters-panel__toggle-label">Filter by file size</span>
+          <span class="ne-filters-panel__toggle-label">${t("Filter by file size")}</span>
           <button type="button" class="ne-filters-panel__toggle" data-ne-toggle="fileSizeFilter" role="switch" aria-checked="false">
             <span class="ne-filters-panel__toggle-indicator"></span>
           </button>
         </div>
         <div class="ne-filters-panel__toggle-item">
-          <span class="ne-filters-panel__toggle-label">Filter completed downloads</span>
+          <span class="ne-filters-panel__toggle-label">${t("Filter completed downloads")}</span>
           <button type="button" class="ne-filters-panel__toggle" data-ne-toggle="completedDownloadsFilter" role="switch" aria-checked="false">
             <span class="ne-filters-panel__toggle-indicator"></span>
           </button>
@@ -687,33 +687,33 @@ export async function addFiltersPanel() {
       </div>
 
       <div class="ne-filters-panel__section ne-filters-panel__seeders-section" id="ne-minSeedersContainer">
-        <h4 class="ne-filters-panel__section-title">Minimum seeders</h4>
-        <p class="ne-filters-panel__section-desc">Hide torrents with fewer seeders than this number. Dead torrents (0 S/L) can still be hidden separately.</p>
+        <h4 class="ne-filters-panel__section-title">${t("Minimum seeders")}</h4>
+        <p class="ne-filters-panel__section-desc">${t("Hide torrents with fewer seeders than this number. Dead torrents (0 S/L) can still be hidden separately.")}</p>
         <div class="ne-filters-panel__seeders-row">
-          <label for="ne-minSeedersValue">At least</label>
-          <input type="number" id="ne-minSeedersValue" min="0" max="999999" step="1" inputmode="numeric" aria-label="Minimum seeders" disabled />
-          <span class="ne-filters-panel__seeders-suffix">seeders</span>
+          <label for="ne-minSeedersValue">${t("At least")}</label>
+          <input type="number" id="ne-minSeedersValue" min="0" max="999999" step="1" inputmode="numeric" aria-label="${t("Minimum seeders")}" disabled />
+          <span class="ne-filters-panel__seeders-suffix">${t("seeders")}</span>
         </div>
       </div>
 
       <div class="ne-filters-panel__section">
-        <h4 class="ne-filters-panel__section-title">Blocked keywords</h4>
-        <p class="ne-filters-panel__section-desc">Torrents with these words in their title will be hidden when keyword filtering is enabled.</p>
+        <h4 class="ne-filters-panel__section-title">${t("Blocked keywords")}</h4>
+        <p class="ne-filters-panel__section-desc">${t("Torrents with these words in their title will be hidden when keyword filtering is enabled.")}</p>
         <div class="ne-filters-panel__keyword-input-row">
-          <input type="text" id="ne-keyword-input" class="ne-filters-panel__keyword-input" placeholder="Enter keyword to filter" />
-          <button type="button" id="ne-add-keyword" class="ne-filters-panel__keyword-add">Add</button>
+          <input type="text" id="ne-keyword-input" class="ne-filters-panel__keyword-input" placeholder="${t("Enter keyword to filter")}" />
+          <button type="button" id="ne-add-keyword" class="ne-filters-panel__keyword-add">${t("Add")}</button>
         </div>
         <div class="ne-filters-panel__keyword-actions">
-          <button type="button" id="ne-remove-all-keywords" class="ne-filters-panel__keyword-remove-all">Remove all</button>
+          <button type="button" id="ne-remove-all-keywords" class="ne-filters-panel__keyword-remove-all">${t("Remove all")}</button>
         </div>
         <div id="ne-keywords-list" class="ne-filters-panel__keywords-list"></div>
       </div>
 
       <div class="ne-filters-panel__section" id="ne-fileSizeRangeContainer">
-        <h4 class="ne-filters-panel__section-title">File size range</h4>
+        <h4 class="ne-filters-panel__section-title">${t("File size range")}</h4>
         <div class="ne-filters-panel__file-size-inputs">
           <div class="ne-filters-panel__file-size-field">
-            <label for="ne-fileSizeMinInput">Minimum</label>
+            <label for="ne-fileSizeMinInput">${t("Minimum")}</label>
             <div class="ne-filters-panel__file-size-value-row">
               <input type="number" id="ne-fileSizeMinInput" min="0" step="any" disabled />
               <select id="ne-fileSizeMinUnit" disabled>
@@ -726,7 +726,7 @@ export async function addFiltersPanel() {
             </div>
           </div>
           <div class="ne-filters-panel__file-size-field">
-            <label for="ne-fileSizeMaxInput">Maximum</label>
+            <label for="ne-fileSizeMaxInput">${t("Maximum")}</label>
             <div class="ne-filters-panel__file-size-value-row">
               <input type="number" id="ne-fileSizeMaxInput" min="0" step="any" disabled />
               <select id="ne-fileSizeMaxUnit" disabled>
@@ -750,14 +750,14 @@ export async function addFiltersPanel() {
       </div>
 
       <div class="ne-filters-panel__section ne-filters-panel__completed-section">
-        <h4 class="ne-filters-panel__section-title">Completed downloads threshold</h4>
+        <h4 class="ne-filters-panel__section-title">${t("Completed downloads threshold")}</h4>
         <div class="ne-filters-panel__completed-row">
           <select id="ne-completedDownloadsOperator" disabled>
-            <option value="gt">Greater than</option>
-            <option value="eq">Equal to</option>
-            <option value="lt">Less than</option>
+            <option value="gt">${t("Greater than")}</option>
+            <option value="eq">${t("Equal to")}</option>
+            <option value="lt">${t("Less than")}</option>
           </select>
-          <input type="number" id="ne-completedDownloadsValue" min="0" step="1" placeholder="Count" disabled />
+          <input type="number" id="ne-completedDownloadsValue" min="0" step="1" placeholder="${t("Count")}" disabled />
         </div>
       </div>
     </div>

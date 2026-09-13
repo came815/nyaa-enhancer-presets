@@ -1,5 +1,7 @@
 body {
-  width: 540px;
+  width: min(540px, 100vw);
+  box-sizing: border-box;
+  overflow-x: hidden;
   margin: 0;
   padding: 0;
   background: #1a1a1a;
@@ -10,8 +12,29 @@ body {
   scrollbar-color: #3a3a3a #1a1a1a;
 }
 
+.ne-language-control {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px 0;
+  color: #aaa;
+  font: 12px "Segoe UI", Tahoma, sans-serif;
+}
+
+.ne-language-control select {
+  min-width: 92px;
+  padding: 3px 6px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #282828;
+  color: #fff;
+  font: inherit;
+}
+
 .nav-container {
   display: flex;
+  flex-wrap: wrap;
   padding: 12px;
   gap: 12px;
   font-family: "Segoe UI", Tahoma, sans-serif;
@@ -24,7 +47,7 @@ body {
   color: #999;
   padding: 10px 8px;
   cursor: pointer;
-  flex: 1;
+  flex: 1 1 100px;
   border-radius: 4px;
   font-family: inherit;
   font-weight: 500;

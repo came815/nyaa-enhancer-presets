@@ -1,5 +1,15 @@
 import { resolveNyaaSettingsTarget } from "../shared/domains.js";
 import { getPreferences, savePreferences } from "../shared/prefs.js";
+import {
+  applyTranslations,
+  createLanguageControl,
+  initI18n,
+  t,
+} from "../shared/i18n.js";
+
+await initI18n();
+applyTranslations(document);
+document.body.prepend(createLanguageControl({ id: "ne-popup-language" }));
 
 async function applySettingsPageLinks() {
   const links = document.querySelectorAll(".ne-settings-page-link");
@@ -30,7 +40,7 @@ async function openNyaaSettingsPage(event) {
   window.close();
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+function wirePopupNavigation() {
   // Handle main tab switching
   document.querySelectorAll(".nav-button").forEach((button) => {
     button.addEventListener("click", () => {
@@ -66,7 +76,13 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", wirePopupNavigation, { once: true });
+} else {
+  wirePopupNavigation();
+}
 
 function wireSettingsPageLinks() {
   document.querySelectorAll(".ne-settings-page-link").forEach((link) => {
@@ -147,13 +163,13 @@ document
     const testBtn = document.getElementById("ameNZBApiKeyTest");
 
     if (!key) {
-      statusEl.textContent = "Enter an API key first.";
+      statusEl.textContent = t("Enter an API key first.");
       statusEl.style.color = "#999";
       return;
     }
 
     testBtn.disabled = true;
-    statusEl.textContent = "Testing…";
+    statusEl.textContent = t("Testing…");
     statusEl.style.color = "#999";
 
     const result = await new Promise((resolve) => {
@@ -169,7 +185,7 @@ document
     testBtn.disabled = false;
 
     if (!result?.ok) {
-      statusEl.textContent = "✗ Request failed.";
+      statusEl.textContent = t("✗ Request failed.");
       statusEl.style.color = "#ff4444";
       return;
     }
@@ -182,7 +198,7 @@ document
       if (errorEl) {
         const code = errorEl.getAttribute("code");
         const desc = errorEl.getAttribute("description") || "Unknown error";
-        statusEl.textContent = `✗ ${desc}`;
+        statusEl.textContent = t("✗ {description}", { description: desc });
         statusEl.style.color = "#ff4444";
         return;
       }
@@ -204,14 +220,14 @@ document
             });
           },
         );
-        statusEl.textContent = "✓ API key is valid.";
+        statusEl.textContent = t("✓ API key is valid.");
         statusEl.style.color = "#4caf50";
       } else {
-        statusEl.textContent = "✗ Unexpected response.";
+        statusEl.textContent = t("✗ Unexpected response.");
         statusEl.style.color = "#ff4444";
       }
     } catch {
-      statusEl.textContent = "✗ Could not parse response.";
+      statusEl.textContent = t("✗ Could not parse response.");
       statusEl.style.color = "#ff4444";
     }
   });
@@ -263,13 +279,13 @@ document.getElementById("tmdbApiKeyTest").addEventListener("click", async () => 
   const testBtn = document.getElementById("tmdbApiKeyTest");
 
   if (!key) {
-    statusEl.textContent = "Enter an API key first.";
+    statusEl.textContent = t("Enter an API key first.");
     statusEl.style.color = "#999";
     return;
   }
 
   testBtn.disabled = true;
-  statusEl.textContent = "Testing…";
+  statusEl.textContent = t("Testing…");
   statusEl.style.color = "#999";
 
   const result = await new Promise((resolve) => {
@@ -285,7 +301,7 @@ document.getElementById("tmdbApiKeyTest").addEventListener("click", async () => 
   testBtn.disabled = false;
 
   if (!result?.ok) {
-    statusEl.textContent = "✗ Request failed.";
+    statusEl.textContent = t("✗ Request failed.");
     statusEl.style.color = "#ff4444";
     return;
   }
@@ -293,19 +309,21 @@ document.getElementById("tmdbApiKeyTest").addEventListener("click", async () => 
   try {
     const json = JSON.parse(result.text);
     if (json.success === false || json.status_code) {
-      statusEl.textContent = `✗ ${json.status_message || "Invalid API key."}`;
+      statusEl.textContent = t("✗ {description}", {
+        description: json.status_message || t("Invalid API key."),
+      });
       statusEl.style.color = "#ff4444";
       return;
     }
     if (json.images || json.change_keys) {
-      statusEl.textContent = "✓ API key is valid.";
+      statusEl.textContent = t("✓ API key is valid.");
       statusEl.style.color = "#4caf50";
     } else {
-      statusEl.textContent = "✗ Unexpected response.";
+      statusEl.textContent = t("✗ Unexpected response.");
       statusEl.style.color = "#ff4444";
     }
   } catch {
-    statusEl.textContent = "✗ Could not parse response.";
+    statusEl.textContent = t("✗ Could not parse response.");
     statusEl.style.color = "#ff4444";
   }
 });
@@ -473,7 +491,7 @@ document.getElementById("tcPasswordToggle").addEventListener("click", () => {
 document.getElementById("tcSaveBtn").addEventListener("click", () => {
   saveTorrentClientSettings();
   const statusEl = document.getElementById("tcStatus");
-  statusEl.textContent = "✓ Saved";
+  statusEl.textContent = t("✓ Saved");
   statusEl.style.color = "#4caf50";
   setTimeout(() => {
     statusEl.textContent = "";
@@ -489,41 +507,41 @@ function torrentOriginsForUrl(url) {
 
 function showTorrentTestResult(result, client, statusEl) {
   if (!result) {
-    statusEl.textContent = "✗ No response from background";
+    statusEl.textContent = t("✗ No response from background");
     statusEl.style.color = "#ff4444";
     return;
   }
   if (result.ok) {
     const label = CLIENT_LABELS[client] || client;
     statusEl.textContent = result.version
-      ? `✓ Connected! (${label} ${result.version})`
-      : `✓ Connected! (${label})`;
+      ? t("✓ Connected! ({label} {version})", { label, version: result.version })
+      : t("✓ Connected! ({label})", { label });
     statusEl.style.color = "#4caf50";
     saveTorrentClientSettings();
     return;
   }
   switch (result.error) {
     case "auth_failed":
-      statusEl.textContent = "✗ Authentication failed - wrong credentials";
+      statusEl.textContent = t("✗ Authentication failed - wrong credentials");
       break;
     case "auth_required":
-      statusEl.textContent = "✗ Server requires authentication";
+      statusEl.textContent = t("✗ Server requires authentication");
       break;
     case "permission_denied":
       statusEl.textContent =
-        "✗ Missing network permission. Click Test Connection and allow access.";
+        t("✗ Missing network permission. Click Test Connection and allow access.");
       break;
     case "wrong_client": {
       const detected =
         CLIENT_LABELS[result.detectedClient] || result.detectedClient;
       const selected = CLIENT_LABELS[client] || client;
-      statusEl.textContent = `✗ This URL is ${detected}, not ${selected}. Change the client dropdown.`;
+      statusEl.textContent = t("✗ This URL is {detected}, not {selected}. Change the client dropdown.", { detected, selected });
       break;
     }
     default:
       statusEl.textContent = result.message
-        ? `✗ Connection failed: ${result.message}`
-        : "✗ Connection failed. Check the URL";
+        ? t("✗ Connection failed: {message}", { message: result.message })
+        : t("✗ Connection failed. Check the URL");
   }
   statusEl.style.color = "#ff4444";
 }
@@ -537,7 +555,7 @@ function runTorrentConnectionTest(
   testBtn,
 ) {
   testBtn.disabled = true;
-  statusEl.textContent = "Testing...";
+  statusEl.textContent = t("Testing...");
   statusEl.style.color = "#999";
   chrome.runtime
     .sendMessage({ type: "testConnection", client, url, username, password })
@@ -558,13 +576,13 @@ document.getElementById("tcTestBtn").addEventListener("click", () => {
   const testBtn = document.getElementById("tcTestBtn");
 
   if (!url) {
-    statusEl.textContent = "Enter a Torrent Client URL first.";
+    statusEl.textContent = t("Enter a Torrent Client URL first.");
     statusEl.style.color = "#999";
     return;
   }
 
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    statusEl.textContent = "✗ URL must start with http:// or https://";
+    statusEl.textContent = t("✗ URL must start with http:// or https://");
     statusEl.style.color = "#ff4444";
     return;
   }
@@ -572,7 +590,7 @@ document.getElementById("tcTestBtn").addEventListener("click", () => {
   try {
     new URL(url);
   } catch {
-    statusEl.textContent = "✗ Invalid URL";
+    statusEl.textContent = t("✗ Invalid URL");
     statusEl.style.color = "#ff4444";
     return;
   }
@@ -582,12 +600,12 @@ document.getElementById("tcTestBtn").addEventListener("click", () => {
   saveTorrentClientSettings();
 
   const origins = torrentOriginsForUrl(url);
-  statusEl.textContent = `Requesting access for ${new URL(url).origin}... Close the popup (if it doesnt automatically close) and accept the permission request.`;
+  statusEl.textContent = t("Requesting access for {origin}... Close the popup (if it doesn't automatically close) and accept the permission request.", { origin: new URL(url).origin });
   statusEl.style.color = "#999";
 
   chrome.permissions.request({ origins }).then((granted) => {
     if (!granted) {
-      statusEl.textContent = "✗ Host permission denied";
+      statusEl.textContent = t("✗ Host permission denied");
       statusEl.style.color = "#ff4444";
       return;
     }
