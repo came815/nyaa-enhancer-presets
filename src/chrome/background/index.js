@@ -1,4 +1,5 @@
 import { initBadgeListeners } from "./badge.js";
+import { initSettingsRelay } from "./settings-sync.js";
 import { initMessageProxy } from "./fetch-proxy.js";
 import { bindProbeAlternateClients } from "./torrent-clients/detect.js";
 import { probeDelugeRpc } from "./torrent-clients/deluge.js";
@@ -23,3 +24,4 @@ bindProbeAlternateClients(async (baseUrl, except) => {
 
 initBadgeListeners();
 initMessageProxy();
+initSettingsRelay();

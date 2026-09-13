@@ -55,7 +55,7 @@ export function fixtureHtml(input = `http://127.0.0.1:${PREVIEW_PORT}/`, { previ
   const isSettings = url.pathname === "/settings";
   const categories = [["0_0", "All categories"], ["1_2", "Anime - English"], ["3_3", "Literature - Raw"]];
   const options = categories.map(([value, label]) => `<option value="${value}" ${category === value ? "selected" : ""}>${label}</option>`).join("");
-  const themeScript = `<script>document.getElementById('theme-toggle').onclick=()=>{const dark=document.body.classList.toggle('dark');document.getElementById('bsThemeLink').href='${assets}/css/bootstrap'+(dark?'-dark':'')+'.min.css';};</script>`;
+  const themeScript = `<script>const themeToggle=document.getElementById('theme-toggle');if(themeToggle)themeToggle.onclick=()=>{const dark=document.body.classList.toggle('dark');document.getElementById('bsThemeLink').href='${assets}/css/bootstrap'+(dark?'-dark':'')+'.min.css';};</script>`;
   const extensionStyles = preview ? manifest.content_scripts.flatMap((entry) => entry.css || []).map((path) => `<link rel="stylesheet" href="/src/chrome/${path}">`).join("") : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthetic Nyaa verification fixture</title>
   <link rel="stylesheet" id="bsThemeLink" href="${assets}/css/bootstrap.min.css"><link rel="stylesheet" href="${assets}/css/bootstrap-xl-mod.css"><link rel="stylesheet" href="${assets}/css/font-awesome.min.css"><link rel="stylesheet" href="${assets}/css/main.css">

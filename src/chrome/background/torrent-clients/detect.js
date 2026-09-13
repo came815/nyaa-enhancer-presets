@@ -1,11 +1,10 @@
+import { extractInfohash } from "../../shared/magnet.js";
+
 export function normalizeUrl(url) {
   return url ? url.trim() : "";
 }
 
-export function extractInfohash(magnetUrl) {
-  const m = magnetUrl.match(/xt=urn:btih:([a-zA-Z0-9]+)/i);
-  return m ? m[1].toLowerCase() : null;
-}
+export { extractInfohash };
 
 export function looksLikeHtml(text) {
   return /<!doctype\s+html|<html[\s>]/i.test(text);

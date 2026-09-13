@@ -39,3 +39,11 @@ The fork also improves narrow-screen toolbar wrapping, adds release attribution 
 - Add localization regression checks and refresh the Japanese usage screenshots and instructions. The GPL license, attribution, and corresponding-source release are retained.
 - Add a cancel control to ZIP and individual torrent-file batches, abort active body reads and queued requests, prevent concurrent batches, and bound each file request to 20 seconds. Cancellation keeps already saved individual files and suppresses unfinished ZIP output.
 - Preserve unchanged non-list link hrefs so native view-title extraction and settings navigation continue to work after preset initialization.
+
+## Version 1.18.0 — 2026-09-14
+
+- Rework table observation and feature lifecycle dispatch so initial/runtime row changes, replaced table bodies, and toolbar re-enabling retain filtering and selection without accumulating listeners. Isolate feature hook failures.
+- Preserve newer local preferences when retrying legacy sync migration, retain readable legacy data when migration fails, and only run save-success callbacks after successful persistence. Restore failed settings/filter toggles instead of claiming success.
+- Add the missing standalone extension settings page, reuse the existing settings UI, and relay content-script settings notifications through the service worker. Match site routing by parsed hostname.
+- Validate qBittorrent and Deluge add acknowledgements, deduplicate canonical infohash sends, and restrict metadata proxy fetches to supported hosts with bounded response waits.
+- Expand local regression coverage for legacy functionality. Retain GPL-3.0, upstream attribution, corresponding-source distribution and the Chrome-only support scope.

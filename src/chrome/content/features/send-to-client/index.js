@@ -1,5 +1,6 @@
 import { loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
 import { t } from "../../../shared/i18n.js";
+import { extractInfohash } from "../../../shared/magnet.js";
 import { createProgressNotification, dismissProgressNotification, escapeHtml, getSelectedVisibleMagnetUrls, getVisibleMagnetUrls, setProgressNotificationStatus, showNotification } from "../../internal.js";
 
 // Shared helper: wires up the click → torrent client flow
@@ -10,6 +11,16 @@ export const SEND_FATAL_ERRORS = new Set([
   "permission_denied",
   "wrong_client",
 ]);
+
+export function dedupeMagnetUrls(magnetUrls) {
+  const seen = new Set();
+  return magnetUrls.filter((magnetUrl) => {
+    const key = extractInfohash(magnetUrl) || magnetUrl;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 export function getTorrentClientAuth(prefs) {
   if (prefs.torrentClient === "transmission") {
@@ -77,6 +88,7 @@ export function setBatchSendButtonsBusy(busy) {
 }
 
 export async function sendMagnetsToClient(magnetUrls, prefs, category, tags) {
+  magnetUrls = dedupeMagnetUrls(magnetUrls);
   const progressNotification = createProgressNotification();
   const total = magnetUrls.length;
   let sent = 0;

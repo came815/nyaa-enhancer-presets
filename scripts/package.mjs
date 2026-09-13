@@ -30,7 +30,7 @@ await addTree('src/chrome');
 for (const file of ['LICENSE.txt', 'MODIFICATIONS.md', 'THIRD_PARTY_NOTICES.txt']) {
   zip.file(file, await readFile(file), { date: fixedDate });
 }
-for (const file of ['INSTALL.md', 'LICENSE-NOTES.md', 'QA.md']) {
+for (const file of ['INSTALL.md', 'LICENSE-NOTES.md', 'QA.md', 'REBUILD.md']) {
   zip.file(`docs/${file}`, await readFile(`docs/${file}`), { date: fixedDate });
 }
 zip.file('SOURCE.txt', `Nyaa Enhancer Presets ${manifest.version}\nCommit: ${commit}\nGPL-3.0\nCorresponding source: ${name}-source.zip in the same release.\nhttps://github.com/came815/nyaa-enhancer-presets/releases/tag/v${manifest.version}\n`, { date: fixedDate });

@@ -25,12 +25,15 @@ export async function qbtLogin(baseUrl, username, password) {
     body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
     credentials: "include",
   });
-  return (await resp.text()).trim(); // "Ok." or "Fails."
+  return {
+    ok: resp.ok && (await resp.text()).trim() === "Ok.",
+    status: resp.status,
+  };
 }
 
 export async function testQbt(baseUrl, username, password) {
   if (username && password) {
-    if ((await qbtLogin(baseUrl, username, password)) === "Fails.") {
+    if (!(await qbtLogin(baseUrl, username, password)).ok) {
       return { ok: false, error: "auth_failed" };
     }
   }
@@ -66,7 +69,7 @@ export async function sendQbt(
   const check = await testQbt(baseUrl, username, password);
   if (!check.ok) return check;
   if (username && password) {
-    if ((await qbtLogin(baseUrl, username, password)) === "Fails.") {
+    if (!(await qbtLogin(baseUrl, username, password)).ok) {
       return { ok: false, error: "auth_failed" };
     }
   }
@@ -98,7 +101,11 @@ export async function sendQbt(
     body: bodyParts.join("&"),
     credentials: "include",
   });
-  if (resp.ok) return { ok: true };
+  // qBittorrent documents HTTP 200 for all other add outcomes.  Its WebUI
+  // replies with "Fails." when it declines the add, so status alone is not
+  // an acknowledgement. See https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0).
+  const body = (await resp.text()).trim();
+  if (resp.ok && body !== "Fails.") return { ok: true };
   if (resp.status === 403) return { ok: false, error: "auth_required" };
   return { ok: false, error: "request_failed" };
 }
@@ -107,7 +114,7 @@ export async function fetchQbtCategoriesAndTags(baseUrl, username, password) {
   const check = await testQbt(baseUrl, username, password);
   if (!check.ok) return check;
   if (username && password) {
-    if ((await qbtLogin(baseUrl, username, password)) === "Fails.") {
+    if (!(await qbtLogin(baseUrl, username, password)).ok) {
       return { ok: false, error: "auth_failed" };
     }
   }

@@ -1,4 +1,4 @@
-import { resolveNyaaSettingsTarget } from "../shared/domains.js";
+import { resolveNyaaSettingsTarget, sendMessageToNyaaTabs } from "../shared/domains.js";
 import { getPreferences, savePreferences } from "../shared/prefs.js";
 import {
   applyTranslations,
@@ -128,14 +128,26 @@ getPreferences(
 );
 
 function notifyContentScriptSetting(setting, value) {
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    if (!tabs[0]?.id) return;
-    chrome.tabs.sendMessage(tabs[0].id, {
-      type: "settingChanged",
-      setting,
-      value,
-    });
+  return sendMessageToNyaaTabs({ type: "settingChanged", setting, value });
+}
+
+function showPopupSaveError(error) {
+  const statusEl = document.getElementById("tcStatus");
+  if (!statusEl) return;
+  statusEl.textContent = t("Failed to save settings: {message}", {
+    message: error?.message || String(error),
   });
+  statusEl.style.color = "#ff4444";
+}
+
+async function savePopupPreferences(items) {
+  try {
+    await savePreferences(items);
+    return true;
+  } catch (error) {
+    showPopupSaveError(error);
+    return false;
+  }
 }
 
 const EYE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
@@ -438,7 +450,7 @@ function loadClientAuth(client, items) {
 }
 
 // Persist settings for the currently selected client
-function saveTorrentClientSettings() {
+async function saveTorrentClientSettings() {
   const client = document.getElementById("tcClientSelect").value;
   const url = document.getElementById("tcIp").value.trim();
   const username = document.getElementById("tcUsername").value.trim();
@@ -454,7 +466,7 @@ function saveTorrentClientSettings() {
     settings.qbtUsername = username;
     settings.qbtPassword = password;
   }
-  savePreferences(settings);
+  return savePopupPreferences(settings);
 }
 
 // Client dropdown change — reload auth fields and adjust UI
@@ -488,9 +500,15 @@ document.getElementById("tcPasswordToggle").addEventListener("click", () => {
 });
 
 // Save button
-document.getElementById("tcSaveBtn").addEventListener("click", () => {
-  saveTorrentClientSettings();
+document.getElementById("tcSaveBtn").addEventListener("click", async () => {
   const statusEl = document.getElementById("tcStatus");
+  const saveButton = document.getElementById("tcSaveBtn");
+  saveButton.disabled = true;
+  statusEl.textContent = "…";
+  statusEl.style.color = "#999";
+  const saved = await saveTorrentClientSettings();
+  saveButton.disabled = false;
+  if (!saved) return;
   statusEl.textContent = t("✓ Saved");
   statusEl.style.color = "#4caf50";
   setTimeout(() => {
@@ -517,7 +535,7 @@ function showTorrentTestResult(result, client, statusEl) {
       ? t("✓ Connected! ({label} {version})", { label, version: result.version })
       : t("✓ Connected! ({label})", { label });
     statusEl.style.color = "#4caf50";
-    saveTorrentClientSettings();
+    void saveTorrentClientSettings();
     return;
   }
   switch (result.error) {
@@ -597,13 +615,16 @@ document.getElementById("tcTestBtn").addEventListener("click", () => {
 
   // Save settings before requesting permissions — Chrome closes the popup during
   // the permission prompt, so values must be persisted to survive the round-trip.
-  saveTorrentClientSettings();
-
   const origins = torrentOriginsForUrl(url);
   statusEl.textContent = t("Requesting access for {origin}... Close the popup (if it doesn't automatically close) and accept the permission request.", { origin: new URL(url).origin });
   statusEl.style.color = "#999";
 
-  chrome.permissions.request({ origins }).then((granted) => {
+  // Start persistence first, but request permission in this click turn. Chrome
+  // rejects delayed permission requests after an await has yielded control.
+  const persisted = saveTorrentClientSettings();
+  const permission = chrome.permissions.request({ origins });
+  Promise.all([persisted, permission]).then(([saved, granted]) => {
+    if (!saved) return;
     if (!granted) {
       statusEl.textContent = t("✗ Host permission denied");
       statusEl.style.color = "#ff4444";
@@ -617,7 +638,7 @@ document.getElementById("tcTestBtn").addEventListener("click", () => {
       statusEl,
       testBtn,
     );
-  });
+  }).catch(showPopupSaveError);
 });
 
 // ── End Torrent Client Tab ───────────────────────────────────────────────────
@@ -628,4 +649,3 @@ fetch(chrome.runtime.getURL("manifest.json"))
   .then((manifest) => {
     document.querySelector(".version-number").textContent = manifest.version;
   });
-

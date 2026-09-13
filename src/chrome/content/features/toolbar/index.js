@@ -5,6 +5,19 @@ import { createProgressNotification, dismissProgressNotification, getSelectedVis
 const DOWNLOAD_REQUEST_TIMEOUT_MS = 20_000;
 const DOWNLOAD_BATCH_DELAY_MS = 500;
 let activeDownloadBatch = null;
+let selectionChangeListenerBound = false;
+
+function updateSelectionFromCheckboxChange(event) {
+  if (!event.target?.classList?.contains("magnet-checkbox")) return;
+  const counter = document.querySelector(".magnet-selection-counter");
+  updateSelectionCounterDisplay(counter, countVisibleCheckedTorrents());
+}
+
+function ensureSelectionChangeListener() {
+  if (selectionChangeListenerBound) return;
+  document.addEventListener("change", updateSelectionFromCheckboxChange);
+  selectionChangeListenerBound = true;
+}
 
 function createCancelableDownloadProgress() {
   const element = createProgressNotification();
@@ -199,16 +212,7 @@ export async function addCopyButton() {
   selectionCounter.setAttribute("role", "status");
   selectionCounter.setAttribute("aria-live", "polite");
   updateSelectionCounterDisplay(selectionCounter, 0);
-
-  // Add a listener to update the counter whenever checkboxes change
-  document.addEventListener("change", (e) => {
-    if (e.target.classList.contains("magnet-checkbox")) {
-      updateSelectionCounterDisplay(
-        selectionCounter,
-        countVisibleCheckedTorrents(),
-      );
-    }
-  });
+  ensureSelectionChangeListener();
 
   // Create Quick Filter button
   const quickFilterButton = document.createElement("button");
@@ -383,6 +387,11 @@ export async function addCheckboxColumn() {
     addCheckboxToTorrentRow(row, prefs);
   });
   syncSelectAllCheckbox();
+}
+
+export async function enhanceTorrentTable() {
+  await addCopyButton();
+  await addCheckboxColumn();
 }
 
 export function copySelectedMagnets() {

@@ -946,9 +946,7 @@ export function loadQuickSearchState() {
 }
 
 export function saveQuickSearchState(state) {
-  return new Promise((resolve) => {
-    savePreferences({ quickSearchState: state }, resolve);
-  });
+  return savePreferences({ quickSearchState: state });
 }
 
 export function clearQuickSearchState() {
@@ -1283,7 +1281,7 @@ export function showQuickFilterPopup(options = {}) {
     }
 
     if (rememberSelectionCheckbox.checked) {
-      await saveQuickSearchState(readQuickSearchFormState());
+      try { await saveQuickSearchState(readQuickSearchFormState()); } catch { return; }
     }
 
     const targetUrl = buildPresetUrl(window.location.href, datePreset);

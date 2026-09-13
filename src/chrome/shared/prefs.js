@@ -211,17 +211,16 @@ function migrateLocalKeysFromSync() {
   if (localPrefMigrationPromise) return localPrefMigrationPromise;
   localPrefMigrationPromise = (async () => {
     try {
-      const { __neLocalMigrated: migrated } = await areaGet("local", {
-        __neLocalMigrated: false,
-      });
-      if (migrated) return;
+      const existing = await areaGet("local", ["__neLocalMigrated", ...LOCAL_PREF_KEYS]);
+      if (existing.__neLocalMigrated) return;
 
       const syncItems = await areaGet("sync", [...LOCAL_PREF_KEYS]);
       const toLocal = {};
       const toRemove = [];
       for (const key of LOCAL_PREF_KEYS) {
         if (Object.prototype.hasOwnProperty.call(syncItems, key)) {
-          toLocal[key] = syncItems[key];
+          // Retrying an interrupted migration must not overwrite newer local data.
+          if (!Object.hasOwn(existing, key)) toLocal[key] = syncItems[key];
           toRemove.push(key);
         }
       }
@@ -233,14 +232,28 @@ function migrateLocalKeysFromSync() {
     } catch (err) {
       console.error("Nyaa Enhancer: storage migration failed:", err);
       localPrefMigrationPromise = null;
+      throw err;
     }
   })();
   return localPrefMigrationPromise;
 }
 
 export async function getPreferencesAsync(keysOrDefaults) {
-  await migrateLocalKeysFromSync();
+  let migrationFailed = false;
+  try { await migrateLocalKeysFromSync(); }
+  catch { migrationFailed = true; }
   const { localQuery, syncQuery } = splitPrefQuery(keysOrDefaults);
+  if (migrationFailed) {
+    // Read-only fallback keeps legacy data usable until a later migration can
+    // complete. Writes still reject rather than race against an unfinished move.
+    const localKeys = Array.isArray(localQuery) ? localQuery : Object.keys(localQuery);
+    const [syncItems, legacyItems, localItems] = await Promise.all([
+      areaGet("sync", syncQuery).catch(() => Array.isArray(syncQuery) ? {} : syncQuery),
+      areaGet("sync", localKeys).catch(() => ({})),
+      areaGet("local", localKeys).catch(() => ({})),
+    ]);
+    return { ...(Array.isArray(localQuery) ? {} : localQuery), ...syncItems, ...legacyItems, ...localItems };
+  }
   const [syncItems, localItems] = await Promise.all([
     areaGet("sync", syncQuery).catch(() =>
       Array.isArray(syncQuery) ? {} : syncQuery,
@@ -278,7 +291,12 @@ export function getPreferences(keysOrDefaults, callback) {
 export function savePreferences(items, callback) {
   const promise = savePreferencesAsync(items);
   if (typeof callback === "function") {
-    promise.then(() => callback(), () => callback());
+    // Legacy callback callers use this as a success continuation, never an
+    // error continuation. Promise callers can await/recover from the rejection.
+    promise.then(() => callback(), () => {}).catch((err) => console.error("Nyaa Enhancer: preference callback failed:", err));
+  } else {
+    // Fire-and-forget legacy handlers report through the registered error UI.
+    promise.catch(() => {});
   }
   return promise;
 }

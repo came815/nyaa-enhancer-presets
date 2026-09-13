@@ -429,12 +429,15 @@ export function neUpdateActiveFilterBadge(prefs) {
 }
 
 export async function neSaveFilterSetting(key, value) {
-  await new Promise((resolve) =>
-    savePreferences({ [key]: value }, resolve),
-  );
+  try { await savePreferences({ [key]: value }); }
+  catch {
+    await neSyncFiltersPanelFromPrefs(await loadStoredPreferences());
+    return false;
+  }
   await handleSettingChange(key, value);
   const prefs = await loadStoredPreferences();
   neUpdateActiveFilterBadge(prefs);
+  return true;
 }
 
 export function neDisplayFilterKeywords(keywords) {
@@ -477,9 +480,7 @@ export async function neAddFilterKeyword() {
   }
 
   const keywords = [...prefs.keywords, keyword];
-  await new Promise((resolve) =>
-    savePreferences({ keywords }, resolve),
-  );
+  try { await savePreferences({ keywords }); } catch { return; }
   input.value = "";
   neDisplayFilterKeywords(keywords);
   await applyAllTorrentFilters({ notify: true });
@@ -488,17 +489,13 @@ export async function neAddFilterKeyword() {
 export async function neRemoveFilterKeyword(keywordToRemove) {
   const prefs = await loadStoredPreferences();
   const keywords = prefs.keywords.filter((k) => k !== keywordToRemove);
-  await new Promise((resolve) =>
-    savePreferences({ keywords }, resolve),
-  );
+  try { await savePreferences({ keywords }); } catch { return; }
   neDisplayFilterKeywords(keywords);
   await applyAllTorrentFilters({ notify: true });
 }
 
 export async function neRemoveAllFilterKeywords() {
-  await new Promise((resolve) =>
-    savePreferences({ keywords: [] }, resolve),
-  );
+  try { await savePreferences({ keywords: [] }); } catch { return; }
   neDisplayFilterKeywords([]);
   await applyAllTorrentFilters({ notify: true });
 }
@@ -580,10 +577,15 @@ export function neWireFilterToggle(toggleId, settingKey, onChange) {
   if (!toggle) return;
 
   toggle.addEventListener("click", async () => {
+    if (toggle.disabled) return;
     const newState = toggle.getAttribute("aria-checked") !== "true";
-    toggle.setAttribute("aria-checked", String(newState));
-    if (onChange) onChange(newState);
-    await neSaveFilterSetting(settingKey, newState);
+    toggle.disabled = true;
+    try {
+      if (await neSaveFilterSetting(settingKey, newState)) {
+        toggle.setAttribute("aria-checked", String(newState));
+        if (onChange) onChange(newState);
+      }
+    } finally { toggle.disabled = false; }
   });
 }
 

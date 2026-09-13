@@ -58,7 +58,7 @@ import {
 import { addSettingsNavItem, handleSettingsPage } from "../pages/settings/index.js";
 import { initShowMorePagination } from "./show-more/index.js";
 import { loadStoredPreferences } from "../../shared/prefs.js";
-import { addCopyButton, addCheckboxColumn } from "./toolbar/index.js";
+import { enhanceTorrentTable } from "./toolbar/index.js";
 import {
   addTsukihimeToViewPage,
   removeTsukihimeRow,
@@ -94,6 +94,14 @@ const FILTER_PANEL_SETTINGS = [
   "keywords",
 ];
 
+function startBackgroundFeatureHook(id, hook, operation) {
+  Promise.resolve()
+    .then(operation)
+    .catch((error) => {
+      console.error(`[Nyaa Enhancer] ${hook} failed for feature "${id}".`, error);
+    });
+}
+
 export const features = [
   {
     id: "filters",
@@ -103,8 +111,8 @@ export const features = [
     async afterObserver(ctx) {
       await applyAllTorrentFilters({ notify: ctx.isInitialLoad });
     },
-    onTableMutated() {
-      filterDeadTorrents();
+    async onTableMutated() {
+      await filterDeadTorrents();
     },
     async onSettingChanged(setting, value) {
       if (
@@ -131,14 +139,15 @@ export const features = [
   {
     id: "toolbar",
     async init() {
-      await addCopyButton();
-      await addCheckboxColumn();
+      await enhanceTorrentTable();
+    },
+    async onTableMutated() {
+      await enhanceTorrentTable();
     },
     async onSettingChanged(setting, value) {
       if (setting === "showButtons") {
         if (value) {
-          addCopyButton();
-          addCheckboxColumn();
+          await enhanceTorrentTable();
         } else {
           document.querySelector(".button-container")?.remove();
           document.querySelector(".magnet-checkbox-column")?.remove();
@@ -153,12 +162,13 @@ export const features = [
   {
     id: "animetosho",
     init() {
-      addAnimetoshoToViewPage();
-      addAnimetoshoComments();
+      startBackgroundFeatureHook("animetosho", "init", () =>
+        Promise.all([addAnimetoshoToViewPage(), addAnimetoshoComments()]),
+      );
     },
-    onTableMutated(mutations) {
+    async onTableMutated(mutations) {
       if (mutationsIncludeNonLinkActionChanges(mutations)) {
-        patchTorrentListLinkActionsForNewRows();
+        await patchTorrentListLinkActionsForNewRows();
       }
     },
     async onSettingChanged(setting, value) {
@@ -218,7 +228,7 @@ export const features = [
   {
     id: "amenzb",
     init() {
-      addAmeNZBToViewPage();
+      startBackgroundFeatureHook("amenzb", "init", addAmeNZBToViewPage);
     },
     onSettingChanged(setting, value) {
       if (setting === "showAmeNZBLinks") {
@@ -237,7 +247,7 @@ export const features = [
   {
     id: "nekobt",
     init() {
-      addNekoBTToViewPage();
+      startBackgroundFeatureHook("nekobt", "init", addNekoBTToViewPage);
     },
     onSettingChanged(setting, value) {
       if (setting === "showNekoBTLinks") {
@@ -254,7 +264,7 @@ export const features = [
   {
     id: "tsukihime",
     init() {
-      addTsukihimeToViewPage();
+      startBackgroundFeatureHook("tsukihime", "init", addTsukihimeToViewPage);
     },
     onSettingChanged(setting, value) {
       if (setting === "showTsukihimeLinks") {
@@ -293,7 +303,7 @@ export const features = [
   {
     id: "seadex",
     init() {
-      initializeSeaDex();
+      startBackgroundFeatureHook("seadex", "init", initializeSeaDex);
     },
     onSettingChanged(setting, value) {
       if (setting === "showSeaDex") {
@@ -305,7 +315,7 @@ export const features = [
   {
     id: "highlights",
     init() {
-      initializeKeywordHighlights();
+      startBackgroundFeatureHook("highlights", "init", initializeKeywordHighlights);
     },
     onSettingChanged(setting) {
       if (
@@ -319,7 +329,7 @@ export const features = [
   {
     id: "screenshotPreview",
     init() {
-      initializeScreenshotPreview();
+      startBackgroundFeatureHook("screenshotPreview", "init", initializeScreenshotPreview);
     },
     onSettingChanged(setting, value) {
       if (setting === "screenshotPreviewEnabled") {
@@ -392,7 +402,7 @@ export const features = [
   {
     id: "sendToClient",
     init() {
-      addSendButtonToViewPage();
+      startBackgroundFeatureHook("sendToClient", "init", addSendButtonToViewPage);
     },
     async onSettingChanged(setting, value) {
       if (setting === "showSendButtons") {
@@ -411,11 +421,13 @@ export const features = [
   {
     id: "changelog",
     init() {
-      showChangelog();
+      startBackgroundFeatureHook("changelog", "init", showChangelog);
     },
     afterObserver() {
-      handleChangelogPage();
-      addChangelogNavItem();
+      startBackgroundFeatureHook("changelog", "afterObserver", async () => {
+        await handleChangelogPage();
+        await addChangelogNavItem();
+      });
     },
     onSettingChanged(setting, value) {
       if (setting === "showChangelogNav") {
@@ -440,7 +452,7 @@ export const features = [
   {
     id: "settings",
     afterObserver() {
-      handleSettingsPage();
+      startBackgroundFeatureHook("settings", "afterObserver", handleSettingsPage);
       addSettingsNavItem();
     },
     onSettingChanged(setting, value) {
@@ -455,8 +467,10 @@ export const features = [
   {
     id: "monitoring",
     afterObserver() {
-      addMonitorButton();
-      checkMonitoredUsers();
+      startBackgroundFeatureHook("monitoring", "afterObserver", async () => {
+        await addMonitorButton();
+        await checkMonitoredUsers();
+      });
     },
     onSettingChanged(setting, value) {
       if (setting === "showMonitorButtons") {

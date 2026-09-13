@@ -337,23 +337,11 @@ export async function addAmeNZBToViewPage() {
 }
 
 // Increment the ameNZB daily request counter, resetting at midnight UTC
-export function incrementAmeNZBRequestCount() {
-  return new Promise((resolve) => {
-    getPreferences(
-      { ameNZBRequestCount: 0, ameNZBRequestDate: "" },
-      (items) => {
-        const todayUTC = new Date().toISOString().slice(0, 10);
-        const count =
-          items.ameNZBRequestDate === todayUTC
-            ? items.ameNZBRequestCount + 1
-            : 1;
-        savePreferences(
-          { ameNZBRequestCount: count, ameNZBRequestDate: todayUTC },
-          resolve,
-        );
-      },
-    );
-  });
+export async function incrementAmeNZBRequestCount() {
+  const items = await getPreferences({ ameNZBRequestCount: 0, ameNZBRequestDate: "" });
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  const count = items.ameNZBRequestDate === todayUTC ? items.ameNZBRequestCount + 1 : 1;
+  await savePreferences({ ameNZBRequestCount: count, ameNZBRequestDate: todayUTC });
 }
 
 export function removeAmeNZBDescriptionSection(panel) {

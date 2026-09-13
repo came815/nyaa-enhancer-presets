@@ -35,11 +35,9 @@ export async function showChangelog() {
         <span class="changelog-version">v${currentVersion}</span>
       </div>
       <div class="changelog-content">
-        • ${t("Switch the extension UI between Japanese and English. Japanese is the default and your choice is remembered.")}<br>
-        • ${t("Cancel torrent-file batches while downloading, with a timeout for stalled files.")}<br>
-        • ${t("Scroll near the bottom to load more results automatically")}<br>
-        • ${t("Sticky period controls with loading status and Pause / Resume")}<br>
-        • ${t("Errors and 10 pages without matches pause loading for you to resume")}
+        • ${t("Keep selection and filters working when results change.")}<br>
+        • ${t("Open settings without a site tab, and keep saved preferences safe.")}<br>
+        • ${t("Report client add failures accurately and avoid duplicate sends.")}
         <div class="changelog-more">${t("Plus more.")} <a href="/changelog">${t("See the full changelog")}</a> ${t("for everything that's new.")}</div>
       </div>
       <div class="changelog-actions">
@@ -102,6 +100,14 @@ export async function handleChangelogPage() {
   changelogContent.innerHTML = `
     <h1>${t("Nyaa Enhancer Presets Changelog")}</h1>
     <h2>${t("Fork changelog")}</h2>
+    <section class="version-entry">
+      <h2>Version 1.18.0 — 2026-09-14</h2>
+      <ul>
+        <li>${t("Keep selection and filters working when results change.")}</li>
+        <li>${t("Open settings without a site tab, and keep saved preferences safe.")}</li>
+        <li>${t("Report client add failures accurately and avoid duplicate sends.")}</li>
+      </ul>
+    </section>
     <section class="version-entry">
       <h2>Version 1.17.0 — 2026-09-14</h2>
       <ul>

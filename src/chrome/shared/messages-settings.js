@@ -1,4 +1,5 @@
 export default {
+  "Settings saved; reload other tabs to apply the change.": "設定は保存されました。ほかのタブを再読み込みして変更を反映してください。",
   Download: "ダウンロード",
   Interface: "インターフェース",
   Filters: "フィルター",

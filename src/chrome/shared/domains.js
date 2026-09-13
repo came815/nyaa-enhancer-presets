@@ -12,7 +12,12 @@ export const NYAA_MATCHES = NYAA_DOMAINS.map((domain) => `*://*.${domain}/*`);
 export const NYAA_SETTINGS_EXTENSION_PATH = "pages/settings/index.html";
 
 export function isNyaaSite(url) {
-  return NYAA_DOMAINS.some((domain) => url?.includes(domain));
+  try {
+    const parsed = new URL(url);
+    return ["http:", "https:"].includes(parsed.protocol) && NYAA_DOMAINS.some(
+      (domain) => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`),
+    );
+  } catch { return false; }
 }
 
 export function isExtensionPage() {
@@ -32,6 +37,13 @@ export async function queryNyaaTabs() {
 }
 
 export async function sendMessageToNyaaTabs(message, { excludeTabId } = {}) {
+  // Content scripts cannot use chrome.tabs. The service worker owns tab lookup
+  // and derives the excluded source tab from Chrome's trusted sender metadata.
+  if (!chrome.tabs?.query) {
+    const result = await chrome.runtime.sendMessage({ type: "relaySettings", message });
+    if (!result?.ok) throw new Error(result?.error || "Settings notification failed");
+    return;
+  }
   const tabs = await queryNyaaTabs();
   await Promise.all(
     tabs.map((tab) => {

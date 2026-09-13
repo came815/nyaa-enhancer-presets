@@ -106,6 +106,16 @@ export async function sendDeluge(baseUrl, password, magnetUrl) {
   });
   if (!resp.ok) return { ok: false, error: "request_failed" };
   const data = await resp.json();
-  if (data.error) return { ok: false, error: "request_failed" };
+  // Deluge core.add_torrent_magnet returns the new torrent_id (a string).
+  // A JSON-RPC envelope without that value did not acknowledge the add.
+  // See https://deluge.readthedocs.io/en/latest/reference/api.html.
+  if (
+    data?.id !== 3 ||
+    data.error != null ||
+    typeof data.result !== "string" ||
+    !data.result.trim()
+  ) {
+    return { ok: false, error: "request_failed" };
+  }
   return { ok: true };
 }

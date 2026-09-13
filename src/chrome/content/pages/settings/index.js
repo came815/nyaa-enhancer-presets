@@ -44,24 +44,20 @@ export function neSettingsCreateToggleRow(settingKey, label, hint = "", dependsO
 
 export async function neSettingsSave(settingKey, value) {
   if (settingKey === "changelogDismissed") {
-    await new Promise((resolve) =>
-      savePreferences({ changelogDismissed: !value, tempDismissed: !value }, resolve),
-    );
+    await savePreferences({ changelogDismissed: !value, tempDismissed: !value });
   } else {
-    await new Promise((resolve) =>
-      savePreferences({ [settingKey]: value }, resolve),
-    );
+    await savePreferences({ [settingKey]: value });
   }
   if (!isExtensionPage()) {
     await handleSettingChange(settingKey, value);
   }
-  const excludeTabId = isExtensionPage()
-    ? undefined
-    : (await chrome.tabs.query({ active: true, currentWindow: true }))[0]?.id;
-  await sendMessageToNyaaTabs(
-    { type: "settingChanged", setting: settingKey, value },
-    { excludeTabId },
-  );
+  try {
+    await sendMessageToNyaaTabs({ type: "settingChanged", setting: settingKey, value });
+    return { relayError: null };
+  } catch (relayError) {
+    neSettingsShowRelayWarning();
+    return { relayError };
+  }
 }
 
 export function neSettingsSyncToggleVisual(toggle, checked) {
@@ -120,33 +116,66 @@ export function neSettingsWireToggles() {
     toggle.addEventListener("click", async () => {
       if (toggle.disabled) return;
       const settingKey = toggle.dataset.setting;
-      const newState = toggle.getAttribute("aria-checked") !== "true";
+      const previousState = toggle.getAttribute("aria-checked") === "true";
+      const newState = !previousState;
       neSettingsSyncToggleVisual(toggle, newState);
-
-      if (settingKey === "changelogDismissed") {
+      toggle.disabled = true;
+      let persisted = false;
+      neSettingsClearSaveStatus();
+      try {
         await neSettingsSave(settingKey, newState);
-        return;
-      }
-
-      await neSettingsSave(settingKey, newState);
-
-      if (settingKey === "showButtons") {
-        neSettingsUpdateDependentRows(newState);
-      }
-      if (settingKey === "screenshotPreviewEnabled") {
-        neSettingsUpdateScreenshotInputs(newState);
-      }
-      if (settingKey === "showSimilarSection") {
-        neSettingsUpdateSimilarVibeInputs(newState);
-      }
-      if (settingKey === "similarUseTmdbRecs") {
-        neSettingsUpdateSimilarTmdbDisclaimer(newState);
-      }
-      if (settingKey === "qbtPromptOnSend") {
-        neSettingsSaveQbtDefaults();
+        persisted = true;
+        if (settingKey === "showButtons") {
+          neSettingsUpdateDependentRows(newState);
+        }
+        if (settingKey === "screenshotPreviewEnabled") {
+          neSettingsUpdateScreenshotInputs(newState);
+        }
+        if (settingKey === "showSimilarSection") {
+          neSettingsUpdateSimilarVibeInputs(newState);
+        }
+        if (settingKey === "similarUseTmdbRecs") {
+          neSettingsUpdateSimilarTmdbDisclaimer(newState);
+        }
+        if (settingKey === "qbtPromptOnSend") {
+          await neSettingsSaveQbtDefaults();
+        }
+      } catch (error) {
+        if (persisted) {
+          await neSettingsLoadValues().catch(() => {});
+        } else {
+          neSettingsSyncToggleVisual(toggle, previousState);
+        }
+        neSettingsShowSaveError(error);
+      } finally {
+        toggle.disabled = false;
       }
     });
   });
+}
+
+function neSettingsShowSaveError(error) {
+  const status = document.getElementById("ne-settings-save-status");
+  if (!status) return;
+  status.textContent = t("Failed to save settings: {message}", {
+    message: error?.message || String(error),
+  });
+}
+
+function neSettingsShowRelayWarning() {
+  const status = document.getElementById("ne-settings-save-status");
+  if (!status) return;
+  status.textContent = t("Settings saved; reload other tabs to apply the change.");
+}
+
+function neSettingsClearSaveStatus() {
+  const status = document.getElementById("ne-settings-save-status");
+  if (status) status.textContent = "";
+}
+
+async function neSettingsHandleSaveFailure(error, { reload = false } = {}) {
+  neSettingsShowSaveError(error);
+  if (reload) await neSettingsLoadValues().catch(() => {});
 }
 
 function neSettingsNormalizeSearch(value) {
@@ -502,15 +531,16 @@ export function neSettingsNotifyMonitoringChanged() {
   }
   sendMessageToNyaaTabs({ type: "refreshMonitoring" });
 }
-  getPreferences({ monitoredUsers: [] }, (items) => {
-    const monitoredUsers = items.monitoredUsers.filter(
-      (user) => user.username !== username,
-    );
-    savePreferences({ monitoredUsers }, () => {
-      neSettingsDisplayMonitoredUsers(monitoredUsers);
-      neSettingsNotifyMonitoringChanged();
-    });
-  });
+
+export async function neSettingsUnmonitorUser(username) {
+  const items = await getPreferences({ monitoredUsers: [] });
+  const monitoredUsers = items.monitoredUsers.filter(
+    (user) => user.username !== username,
+  );
+  await savePreferences({ monitoredUsers });
+  neSettingsDisplayMonitoredUsers(monitoredUsers);
+  neSettingsNotifyMonitoringChanged();
+}
 
 export function neSettingsUnmonitorAllUsers() {
   savePreferences({ monitoredUsers: [] }, () => {
@@ -668,7 +698,12 @@ export async function neSettingsAddHighlightKeyword() {
   }
 
   highlightKeywords.push({ keyword, color });
-  await neSettingsSave("highlightKeywords", highlightKeywords);
+  try {
+    await neSettingsSave("highlightKeywords", highlightKeywords);
+  } catch (error) {
+    await neSettingsHandleSaveFailure(error);
+    return;
+  }
   neSettingsDisplayHighlightKeywords(highlightKeywords);
   input.value = "";
 }
@@ -681,7 +716,12 @@ export async function neSettingsUpdateHighlightColor(keywordToUpdate, colorValue
   const highlightKeywords = (prefs.highlightKeywords || []).map((item) =>
     item.keyword === keywordToUpdate ? { ...item, color } : item,
   );
-  await neSettingsSave("highlightKeywords", highlightKeywords);
+  try {
+    await neSettingsSave("highlightKeywords", highlightKeywords);
+  } catch (error) {
+    await neSettingsHandleSaveFailure(error, { reload: true });
+    return;
+  }
   neSettingsDisplayHighlightKeywords(highlightKeywords);
 }
 
@@ -690,12 +730,22 @@ export async function neSettingsRemoveHighlightKeyword(keywordToRemove) {
   const highlightKeywords = (prefs.highlightKeywords || []).filter(
     (item) => item.keyword !== keywordToRemove,
   );
-  await neSettingsSave("highlightKeywords", highlightKeywords);
+  try {
+    await neSettingsSave("highlightKeywords", highlightKeywords);
+  } catch (error) {
+    await neSettingsHandleSaveFailure(error, { reload: true });
+    return;
+  }
   neSettingsDisplayHighlightKeywords(highlightKeywords);
 }
 
 export async function neSettingsRemoveAllHighlightKeywords() {
-  await neSettingsSave("highlightKeywords", []);
+  try {
+    await neSettingsSave("highlightKeywords", []);
+  } catch (error) {
+    await neSettingsHandleSaveFailure(error, { reload: true });
+    return;
+  }
   neSettingsDisplayHighlightKeywords([]);
 }
 
@@ -802,14 +852,18 @@ export function neSettingsDisplayDefaultTags(tags, defaultTags) {
     cb.type = "checkbox";
     cb.value = tag;
     if (defaultTags.includes(tag)) cb.checked = true;
-    cb.addEventListener("change", () => neSettingsSaveQbtDefaults());
+    cb.addEventListener("change", () => {
+      void neSettingsSaveQbtDefaults().catch((error) =>
+        neSettingsHandleSaveFailure(error, { reload: true }),
+      );
+    });
     label.appendChild(cb);
     label.appendChild(document.createTextNode(tag));
     container.appendChild(label);
   });
 }
 
-export function neSettingsSaveQbtDefaults() {
+export async function neSettingsSaveQbtDefaults() {
   const defaultCatSelect = document.getElementById("ne-qbt-default-category");
   const defaultTags = [];
   document
@@ -820,7 +874,7 @@ export function neSettingsSaveQbtDefaults() {
     '.ne-settings-page [data-setting="qbtPromptOnSend"]',
   );
 
-  savePreferences({
+  await savePreferences({
     qbtDefaultCategory: defaultCatSelect ? defaultCatSelect.value : "",
     qbtDefaultTags: defaultTags,
     qbtPromptOnSend: promptToggle
@@ -1039,7 +1093,11 @@ export function neSettingsWireQbtSection() {
   });
   document
     .getElementById("ne-qbt-default-category")
-    ?.addEventListener("change", neSettingsSaveQbtDefaults);
+    ?.addEventListener("change", () => {
+      void neSettingsSaveQbtDefaults().catch((error) =>
+        neSettingsHandleSaveFailure(error, { reload: true }),
+      );
+    });
   document
     .getElementById("ne-qbt-sync-btn")
     ?.addEventListener("click", neSettingsSyncQbtCategoriesAndTags);
@@ -1148,23 +1206,37 @@ async function commitVibeMix() {
   ) {
     return;
   }
-  vibeMixSaved = { ...mix };
-  await new Promise((resolve) =>
-    savePreferences(
-      {
-        similarVibeGenreWeight: mix.genre,
-        similarVibeTagWeight: mix.tags,
-        similarVibeStudioWeight: mix.studio,
-      },
-      resolve,
-    ),
-  );
-  await handleSettingChange("similarVibeGenreWeight", mix.genre);
+  try {
+    await savePreferences({
+      similarVibeGenreWeight: mix.genre,
+      similarVibeTagWeight: mix.tags,
+      similarVibeStudioWeight: mix.studio,
+    });
+    vibeMixSaved = { ...mix };
+    if (!isExtensionPage()) {
+      await handleSettingChange("similarVibeGenreWeight", mix.genre);
+    }
+  } catch (error) {
+    neSettingsShowSaveError(error);
+    return false;
+  }
+  try {
+    await Promise.all([
+      sendMessageToNyaaTabs({ type: "settingChanged", setting: "similarVibeGenreWeight", value: mix.genre }),
+      sendMessageToNyaaTabs({ type: "settingChanged", setting: "similarVibeTagWeight", value: mix.tags }),
+      sendMessageToNyaaTabs({ type: "settingChanged", setting: "similarVibeStudioWeight", value: mix.studio }),
+    ]);
+  } catch {
+    neSettingsShowRelayWarning();
+  }
+  return true;
 }
 
 function scheduleVibeMixSave() {
   clearTimeout(vibeMixSaveTimer);
-  vibeMixSaveTimer = setTimeout(() => commitVibeMix(), 160);
+  vibeMixSaveTimer = setTimeout(() => {
+    void commitVibeMix();
+  }, 160);
 }
 
 function applyVibeMix(mix, { save = false, immediate = false } = {}) {
@@ -1176,7 +1248,7 @@ function applyVibeMix(mix, { save = false, immediate = false } = {}) {
   if (!save) return;
   if (immediate) {
     clearTimeout(vibeMixSaveTimer);
-    commitVibeMix();
+    void commitVibeMix();
     return;
   }
   scheduleVibeMixSave();
@@ -1407,7 +1479,11 @@ export function neSettingsWireScreenshotInputs() {
         value = defaultValue;
         input.value = value;
       }
-      await neSettingsSave(settingKey, value);
+      try {
+        await neSettingsSave(settingKey, value);
+      } catch (error) {
+        await neSettingsHandleSaveFailure(error, { reload: true });
+      }
     };
     input.addEventListener("change", commit);
     input.addEventListener("blur", commit);
@@ -1435,6 +1511,7 @@ export function neSettingsBuildPageHTML() {
         <span data-i18n="Torrent client connection and API keys (ameNZB, TMDB) are managed in the">Torrent client connection and API keys (ameNZB, TMDB) are managed in the</span>
         <strong data-i18n="extension popup">extension popup</strong> <span data-i18n="(click the extension icon in your browser toolbar).">(click the extension icon in your browser toolbar).</span>
       </p>
+      <p class="ne-settings-save-status" id="ne-settings-save-status" role="status"></p>
       <div class="ne-settings-search">
         <div class="ne-settings-search__field">
           <span class="ne-settings-search__icon" aria-hidden="true"><i class="fa fa-search"></i></span>
@@ -1835,13 +1912,18 @@ export function neSettingsBuildPageHTML() {
 }
 
 export async function handleSettingsPage() {
-  if (window.location.pathname !== "/settings") return;
+  const extensionSettingsPage =
+    isExtensionPage() && window.location.pathname === "/pages/settings/index.html";
+  if (window.location.pathname !== "/settings" && !extensionSettingsPage) return;
   if (document.querySelector(".ne-settings-page")) return;
 
-  const mainContainer = document.querySelector(".container > h1")?.parentElement;
+  const mainContainer = extensionSettingsPage
+    ? document.getElementById("ne-extension-settings-root")
+    : document.querySelector(".container > h1")?.parentElement;
   if (!mainContainer) return;
 
-  document.title = t("Settings :: Nyaa");
+  document.title = extensionSettingsPage ? t("Nyaa Enhancer Settings") : t("Settings :: Nyaa");
+  document.body.classList.toggle("ne-extension-settings", extensionSettingsPage);
   mainContainer.innerHTML = "";
 
   const settingsPage = neSettingsBuildPageHTML();
@@ -1862,7 +1944,10 @@ export async function handleSettingsPage() {
   neSettingsWireSimilarCache();
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if ((area !== "sync" && area !== "local") || window.location.pathname !== "/settings") return;
+    if (
+      (area !== "sync" && area !== "local") ||
+      (window.location.pathname !== "/settings" && !extensionSettingsPage)
+    ) return;
     if (
       changes.ameNZBRequestCount ||
       changes.ameNZBRequestDate ||

@@ -1,4 +1,7 @@
 export default {
+  "Keep selection and filters working when results change.": "結果の追加・更新後も、選択とフィルターが正しく動作します。",
+  "Open settings without a site tab, and keep saved preferences safe.": "サイトを開いていなくても設定でき、保存済みの設定を保護します。",
+  "Report client add failures accurately and avoid duplicate sends.": "クライアントへの追加失敗を正しく表示し、重複送信を防ぎます。",
   "Cancel torrent-file batches while downloading, with a timeout for stalled files.": "Torrentファイルの一括取得を途中でキャンセルでき、応答が止まったファイルはタイムアウトするようにしました。",
   "What's New": "新着情報",
   "Okay": "了解",
