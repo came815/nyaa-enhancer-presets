@@ -64,6 +64,7 @@ export const PREF_DEFAULTS = {
   showMagnetButtons: true,
   showSendButtons: true,
   showQuickFilter: true,
+  autoLoadMore: true,
   showMonitorButtons: true,
   hideDeadTorrents: false,
   minSeedersFilterEnabled: false,

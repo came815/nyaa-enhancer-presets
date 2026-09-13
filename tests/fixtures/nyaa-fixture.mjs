@@ -29,7 +29,7 @@ function row(name, ageDays, now, { future = false } = {}) {
 }
 
 function rowsFor(page, mode, now) {
-  if (mode === "visual" && page === 1) return Array.from({ length: 20 }, (_, index) => row(`visual-${index + 1}`, 0.2 + index, now));
+  if (mode === "visual" && page === 1) return Array.from({ length: 60 }, (_, index) => row(`visual-${index + 1}`, 0.2 + index / 10, now));
   if (page === 1) return [row("month", 20, now), row("recent", 0.25, now), row("week", 3, now), row("old", 45, now), row("future", 0, now, { future: true })];
   if (mode === "skip") {
     if (page === 2) return [row("duplicate", 0.25, now), row("too-old", 60, now)];

@@ -27,7 +27,7 @@
 
   chromeApi.runtime ||= {};
   chromeApi.runtime.getURL ||= (path) => `/src/chrome/${path}`;
-  chromeApi.runtime.getManifest ||= () => ({ manifest_version: 3, name: "Nyaa Enhancer Presets synthetic preview", version: "1.15.0" });
+  chromeApi.runtime.getManifest ||= () => ({ manifest_version: 3, name: "Nyaa Enhancer Presets synthetic preview", version: "1.16.0" });
   chromeApi.runtime.sendMessage ||= (_message, callback) => reply({ ok: false, error: "Synthetic fixture" }, callback);
   chromeApi.runtime.onMessage ||= { addListener() {} };
   chromeApi.storage ||= {};

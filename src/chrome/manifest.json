@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Nyaa Enhancer Presets",
-  "version": "1.15.0",
-  "description": "Nyaa Enhancer fork with Day, Week, Month, 3Month and Year upload filters, persistent searches and incremental results.",
+  "version": "1.16.0",
+  "description": "Nyaa Enhancer fork with upload period presets, seeder sorting, automatic scroll loading and pause/resume controls.",
   "background": {
     "service_worker": "background/index.js",
     "type": "module"

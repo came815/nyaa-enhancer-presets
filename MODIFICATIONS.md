@@ -18,3 +18,10 @@ The fork changes cover Chrome-oriented preset search behavior and release packag
 See docs/QA.md for the recorded verification and its limits. The fork does not claim Firefox support; the original Firefox implementation remains upstream.
 
 The fork also improves narrow-screen toolbar wrapping, adds release attribution to About/Changelog, and supplies pinned third-party notices and readable vendor sources.
+
+## Version 1.16.0 — 2026-09-13
+
+- Automatically load results near the bottom of the list, using the same sequential request spacing, date filters, and duplicate removal as manual loading.
+- Add sticky date controls, visible loading state, and a remembered auto-loading on/off choice with Pause / Resume controls.
+- Require explicit resume after errors, rate limits, timeouts, or ten pages without visible matches; start no new page requests while the tab is hidden.
+- Extend localhost browser checks and update the usage documentation and screenshots. License and upstream attribution are retained.

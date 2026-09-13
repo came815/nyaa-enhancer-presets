@@ -34,9 +34,9 @@ export async function showChangelog() {
         <span class="changelog-version">v${currentVersion}</span>
       </div>
       <div class="changelog-content">
-        • Nyaa Enhancer Presets: Day / Week / Month / 3Month / Year<br>
-        • Period and seeder order persist across searches and navigation<br>
-        • Show more supports Cancel, resume and bounded page loading
+        • Scroll near the bottom to load more results automatically<br>
+        • Sticky period controls with loading status and Pause / Resume<br>
+        • Errors and 10 pages without matches pause loading for you to resume
         <div class="changelog-more">Plus more. <a href="/changelog">See the full changelog</a> for everything that's new.</div>
       </div>
       <div class="changelog-actions">
@@ -98,6 +98,15 @@ export async function handleChangelogPage() {
   changelogContent.className = "changelog-page";
   changelogContent.innerHTML = `
     <h1>Nyaa Enhancer Presets Changelog</h1>
+    <section class="version-entry">
+      <h2>Version 1.16.0 — 2026-09-13</h2>
+      <ul>
+        <li>Load the next results automatically when scrolling near the bottom, with sequential requests and duplicate removal.</li>
+        <li>Keep period presets, loading status, and Pause / Resume within reach while scrolling.</li>
+        <li>Remember manual auto-loading on/off choices. Errors, rate limits, timeouts, and ten pages without matches require explicit resume.</li>
+        <li>Start no new page requests while the tab is hidden; retain Show more for manual loading.</li>
+      </ul>
+    </section>
     <div class="version-entry">
       <h2>Version 1.15.0 — 2026-09-13</h2>
       <p>Independent GPL v3 fork by came815, based on Nyaa Enhancer by Arad119.</p>

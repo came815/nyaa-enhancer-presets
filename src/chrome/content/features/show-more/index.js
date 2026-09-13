@@ -1,4 +1,7 @@
-import { loadStoredPreferences } from "../../../shared/prefs.js";
+import {
+  loadStoredPreferences,
+  savePreferences,
+} from "../../../shared/prefs.js";
 import {
   addCheckboxToTorrentRow,
   applyKeywordHighlights,
@@ -33,6 +36,14 @@ export const neShowMoreState = {
   retryAt: 0,
   retryTimer: null,
   stoppedAtLimit: false,
+  autoLoadEnabled: false,
+  autoPreferenceLoaded: false,
+  autoPaused: false,
+  autoPauseMessage: "",
+  autoObserver: null,
+  autoCheckTimer: null,
+  visibilityHandler: null,
+  preferenceSaveQueue: Promise.resolve(),
 };
 
 export function getNyaaPageNumberFromHref(href, base = window.location.href) {
@@ -137,17 +148,68 @@ export function getShowMoreStatusText() {
   const startedLater = neShowMoreState.initialPage > 1;
   const scope = startedLater ? " · loaded pages only" : "";
 
-  if (neShowMoreState.loading) return `${pages} · ${visible}${scope}`;
+  let detail = "Ready to load more.";
+  if (neShowMoreState.loading) detail = neShowMoreState.loadingLabel;
   if (neShowMoreState.retryAt > Date.now()) {
-    return `Rate limited. Retry in ${Math.ceil((neShowMoreState.retryAt - Date.now()) / 1000)}s; the next page is unchanged.`;
+    detail = `Rate limited. Retry in ${Math.ceil((neShowMoreState.retryAt - Date.now()) / 1000)}s; next page unchanged.`;
+  } else if (neShowMoreState.autoPauseMessage) {
+    detail = neShowMoreState.autoPauseMessage;
+  } else if (!neShowMoreState.hasMore) {
+    detail = "Available pages exhausted.";
+  } else if (neShowMoreState.stoppedAtLimit) {
+    detail = "10-page limit reached; continue when ready.";
   }
-  if (!neShowMoreState.hasMore) {
-    return `${pages} · ${visible} · available pages exhausted${scope}`;
+  return `${pages} · ${visible} · ${detail}${scope}`;
+}
+
+export function getAutoLoadToggle() {
+  return document.querySelector(".ne-auto-load__toggle");
+}
+
+export function getAutoLoadStatus() {
+  return document.querySelector(".ne-auto-load__status");
+}
+
+export function getAutoLoadStatusText() {
+  const pages = `${neShowMoreState.loadedPages} page${neShowMoreState.loadedPages === 1 ? "" : "s"}`;
+  const visible = `${neShowMoreState.visibleTotal} result${neShowMoreState.visibleTotal === 1 ? "" : "s"}`;
+  let state;
+  if (!neShowMoreState.autoPreferenceLoaded) {
+    state = "Loading preference…";
+  } else if (neShowMoreState.loading) {
+    state = neShowMoreState.loadingLabel;
+  } else if (!neShowMoreState.autoLoadEnabled) {
+    state = "Automatic loading off";
+  } else if (neShowMoreState.retryAt > Date.now()) {
+    state = `Cooldown: retry in ${Math.ceil((neShowMoreState.retryAt - Date.now()) / 1000)}s`;
+  } else if (neShowMoreState.autoPaused) {
+    state = neShowMoreState.autoPauseMessage || "Automatic loading paused";
+  } else if (!neShowMoreState.hasMore) {
+    state = "Available pages exhausted";
+  } else if (document.hidden) {
+    state = "Waiting for this tab to be visible";
+  } else {
+    state = "Scroll for more";
   }
-  if (neShowMoreState.stoppedAtLimit) {
-    return `${pages} · ${visible} · 10-page limit reached; continue when ready.${scope}`;
-  }
-  return `${pages} · ${visible}${scope}`;
+  return `${pages} · ${visible} · ${state}`;
+}
+
+export function updateAutoLoadControls() {
+  const toggle = getAutoLoadToggle();
+  const status = getAutoLoadStatus();
+  if (status) status.textContent = getAutoLoadStatusText();
+  if (!toggle) return;
+  toggle.disabled =
+    !neShowMoreState.autoPreferenceLoaded ||
+    (neShowMoreState.autoPaused && neShowMoreState.retryAt > Date.now());
+  toggle.setAttribute(
+    "aria-pressed",
+    String(neShowMoreState.autoLoadEnabled && !neShowMoreState.autoPaused),
+  );
+  toggle.textContent =
+    neShowMoreState.autoLoadEnabled && !neShowMoreState.autoPaused
+      ? "Pause auto"
+      : "Resume auto";
 }
 
 export function updateShowMoreButtonState() {
@@ -168,6 +230,7 @@ export function updateShowMoreButtonState() {
     loadingLabel: neShowMoreState.loadingLabel,
   });
   if (cancel) cancel.hidden = !neShowMoreState.loading;
+  updateAutoLoadControls();
 }
 
 export function delay(ms, signal) {
@@ -188,6 +251,100 @@ export function delay(ms, signal) {
     }
     signal?.addEventListener("abort", abort, { once: true });
   });
+}
+
+export function pauseAutoLoading(message = "Automatic loading is paused.") {
+  neShowMoreState.autoPaused = true;
+  neShowMoreState.autoPauseMessage = message;
+  updateShowMoreButtonState();
+}
+
+export function canAutoLoad({ ignoreLoading = false } = {}) {
+  return (
+    neShowMoreState.autoPreferenceLoaded &&
+    neShowMoreState.autoLoadEnabled &&
+    !neShowMoreState.autoPaused &&
+    neShowMoreState.hasMore &&
+    (ignoreLoading || !neShowMoreState.loading) &&
+    !document.hidden
+  );
+}
+
+export function isShowMoreNearViewport() {
+  const sentinel = document.querySelector(".ne-show-more");
+  if (!sentinel) return false;
+  return sentinel.getBoundingClientRect().top <= window.innerHeight + 600;
+}
+
+export function queueAutoLoadCheck() {
+  clearTimeout(neShowMoreState.autoCheckTimer);
+  neShowMoreState.autoCheckTimer = setTimeout(() => {
+    if (canAutoLoad() && isShowMoreNearViewport()) {
+      loadNextNyaaResultsPage({ auto: true });
+    }
+  }, 0);
+}
+
+export function waitForVisibleTab(signal) {
+  if (signal?.aborted) {
+    return Promise.reject(new DOMException("Aborted", "AbortError"));
+  }
+  if (!document.hidden) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    function finish() {
+      document.removeEventListener("visibilitychange", onChange);
+      signal?.removeEventListener("abort", abort);
+    }
+    function onChange() {
+      if (!document.hidden) {
+        finish();
+        resolve();
+      }
+    }
+    function abort() {
+      finish();
+      reject(new DOMException("Aborted", "AbortError"));
+    }
+    document.addEventListener("visibilitychange", onChange);
+    signal?.addEventListener("abort", abort, { once: true });
+  });
+}
+
+export function setupAutoLoadObserver() {
+  if (neShowMoreState.autoObserver || !window.IntersectionObserver) return;
+  const sentinel = document.querySelector(".ne-show-more");
+  if (!sentinel) return;
+  neShowMoreState.autoObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) queueAutoLoadCheck();
+    },
+    { rootMargin: "0px 0px 600px 0px" },
+  );
+  neShowMoreState.autoObserver.observe(sentinel);
+  neShowMoreState.visibilityHandler = () => {
+    updateShowMoreButtonState();
+    if (!document.hidden) queueAutoLoadCheck();
+  };
+  document.addEventListener("visibilitychange", neShowMoreState.visibilityHandler);
+}
+
+export async function toggleAutoLoading() {
+  const resuming =
+    !neShowMoreState.autoLoadEnabled || neShowMoreState.autoPaused;
+  neShowMoreState.autoLoadEnabled = resuming;
+  neShowMoreState.autoPaused = false;
+  neShowMoreState.autoPauseMessage = "";
+  if (!resuming) {
+    cancelShowMoreLoading();
+    pauseAutoLoading("Automatic loading is paused.");
+  }
+  updateShowMoreButtonState();
+  const value = neShowMoreState.autoLoadEnabled;
+  neShowMoreState.preferenceSaveQueue = neShowMoreState.preferenceSaveQueue
+    .catch(() => {})
+    .then(() => savePreferences({ autoLoadMore: value }));
+  await neShowMoreState.preferenceSaveQueue;
+  if (resuming) queueAutoLoadCheck();
 }
 
 export function applyFiltersToShowMoreRows(rows, prefs) {
@@ -304,32 +461,42 @@ function getRateLimitPause(error) {
   return Number.isFinite(pause) && pause > 0 ? pause : NE_SHOW_MORE_RATE_LIMIT_PAUSE_MS;
 }
 
-function scheduleRetryStateRefresh() {
+function scheduleCooldownRefresh() {
   clearTimeout(neShowMoreState.retryTimer);
   neShowMoreState.retryTimer = setTimeout(() => {
-    neShowMoreState.retryAt = 0;
+    // This refresh only unlocks explicit controls; it never starts a request.
     updateShowMoreButtonState();
   }, Math.max(0, neShowMoreState.retryAt - Date.now()));
 }
 
 export function cancelShowMoreLoading() {
+  pauseAutoLoading("Automatic loading paused after cancellation.");
   neShowMoreState.requestController?.abort("cancelled");
 }
 
-export async function loadNextNyaaResultsPage() {
+export async function loadNextNyaaResultsPage({ auto = false } = {}) {
   if (
     neShowMoreState.loading ||
     !neShowMoreState.hasMore ||
-    neShowMoreState.retryAt > Date.now()
+    neShowMoreState.retryAt > Date.now() ||
+    (auto && !canAutoLoad())
   ) {
     return;
   }
   const tableBody = document.querySelector("table.torrent-list tbody");
   if (!tableBody) return;
 
+  // An accepted post-cooldown request is an explicit retry/continuation.
+  if (neShowMoreState.retryAt && neShowMoreState.retryAt <= Date.now()) {
+    neShowMoreState.retryAt = 0;
+  }
+  neShowMoreState.stoppedAtLimit = false;
+  if (!auto) {
+    // A manual request is an explicit retry, but does not silently resume auto-load.
+    neShowMoreState.autoPauseMessage = "";
+  }
   neShowMoreState.loading = true;
   neShowMoreState.loadingLabel = "Loading…";
-  neShowMoreState.stoppedAtLimit = false;
   const controller = new AbortController();
   neShowMoreState.requestController = controller;
   updateShowMoreButtonState();
@@ -337,10 +504,17 @@ export async function loadNextNyaaResultsPage() {
   try {
     const prefs = await loadStoredPreferences();
     let pagesThisClick = 0;
+    let consecutiveNoVisiblePages = 0;
     while (
       neShowMoreState.hasMore &&
       pagesThisClick < NE_SHOW_MORE_MAX_PAGES_PER_CLICK
     ) {
+      if (document.hidden) {
+        neShowMoreState.loadingLabel = "Waiting for this tab to be visible…";
+        updateShowMoreButtonState();
+        await waitForVisibleTab(controller.signal);
+        if (auto && !canAutoLoad({ ignoreLoading: true })) return;
+      }
       const wait =
         NE_SHOW_MORE_SKIP_DELAY_MS -
         (Date.now() - neShowMoreState.lastRequestStartedAt);
@@ -348,6 +522,15 @@ export async function loadNextNyaaResultsPage() {
         neShowMoreState.loadingLabel = "Waiting before next request…";
         updateShowMoreButtonState();
         await delay(wait, controller.signal);
+      }
+      if (document.hidden) {
+        neShowMoreState.loadingLabel = "Waiting for this tab to be visible…";
+        updateShowMoreButtonState();
+        await waitForVisibleTab(controller.signal);
+        if (auto && !canAutoLoad({ ignoreLoading: true })) return;
+      }
+      if (controller.signal.aborted) {
+        throw new DOMException("Aborted", "AbortError");
       }
 
       neShowMoreState.loadingLabel = pagesThisClick
@@ -376,13 +559,17 @@ export async function loadNextNyaaResultsPage() {
         if (prefs.showSeaDex) applySeaDexToListPage(result.visibleRows);
         break;
       }
+      consecutiveNoVisiblePages++;
     }
 
     if (
-      pagesThisClick >= NE_SHOW_MORE_MAX_PAGES_PER_CLICK &&
+      consecutiveNoVisiblePages >= NE_SHOW_MORE_MAX_PAGES_PER_CLICK &&
       neShowMoreState.hasMore
     ) {
       neShowMoreState.stoppedAtLimit = true;
+      pauseAutoLoading(
+        "Automatic loading paused after 10 consecutive pages without visible results.",
+      );
     }
     if (!neShowMoreState.hasMore && neShowMoreState.visibleTotal === 0) {
       showNotification(
@@ -392,6 +579,11 @@ export async function loadNextNyaaResultsPage() {
     }
   } catch (error) {
     if (controller.signal.aborted) {
+      if (controller.signal.reason === "timeout") {
+        pauseAutoLoading(
+          "Automatic loading paused after a timeout. Resume when ready.",
+        );
+      }
       showNotification(
         controller.signal.reason === "timeout"
           ? "Loading timed out. The next page was not advanced; try again."
@@ -400,12 +592,20 @@ export async function loadNextNyaaResultsPage() {
       );
     } else if (error?.status === 429) {
       neShowMoreState.retryAt = Date.now() + getRateLimitPause(error);
-      scheduleRetryStateRefresh();
+      scheduleCooldownRefresh();
+      pauseAutoLoading(
+        "Automatic loading paused after rate limiting. Resume when ready.",
+      );
       showNotification(
         "Nyaa is rate limiting requests. Loading is paused before retry.",
         false,
       );
     } else {
+      pauseAutoLoading(
+        error?.code === "UNEXPECTED_HTML"
+          ? "Automatic loading paused: unexpected Nyaa page. Resume when ready."
+          : "Automatic loading paused after an error. Resume when ready.",
+      );
       console.error("Failed to load more Nyaa results:", error);
       showNotification(
         error?.code === "UNEXPECTED_HTML"
@@ -421,7 +621,29 @@ export async function loadNextNyaaResultsPage() {
       neShowMoreState.requestController = null;
     }
     updateShowMoreButtonState();
+    if (!neShowMoreState.autoPaused) queueAutoLoadCheck();
   }
+}
+
+export function addAutoLoadControls() {
+  const panel = document.getElementById("ne-date-presets");
+  if (!panel || panel.querySelector(".ne-date-presets__loading")) return;
+  const wrapper = document.createElement("div");
+  wrapper.className = "ne-date-presets__loading";
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "ne-auto-load__toggle";
+  toggle.setAttribute("aria-pressed", "false");
+  toggle.addEventListener("click", () => {
+    toggleAutoLoading().catch((error) => {
+      console.error("Failed to save auto-load preference:", error);
+    });
+  });
+  const status = document.createElement("span");
+  status.className = "ne-auto-load__status";
+  status.setAttribute("aria-live", "polite");
+  wrapper.append(toggle, status);
+  panel.appendChild(wrapper);
 }
 
 export function initShowMorePagination() {
@@ -447,7 +669,6 @@ export function initShowMorePagination() {
   container.className = "ne-show-more";
   const status = document.createElement("p");
   status.className = "ne-show-more__status";
-  status.setAttribute("aria-live", "polite");
   const controls = document.createElement("div");
   controls.className = "ne-show-more__controls";
   const button = document.createElement("button");
@@ -465,5 +686,21 @@ export function initShowMorePagination() {
   controls.append(button, cancel);
   container.append(status, controls);
   tableResponsive.insertAdjacentElement("afterend", container);
+  addAutoLoadControls();
   updateShowMoreButtonState();
+  setupAutoLoadObserver();
+  loadStoredPreferences()
+    .then((prefs) => {
+      neShowMoreState.autoLoadEnabled = prefs.autoLoadMore !== false;
+      neShowMoreState.autoPreferenceLoaded = true;
+      neShowMoreState.autoPaused = false;
+      neShowMoreState.autoPauseMessage = "";
+      updateShowMoreButtonState();
+      queueAutoLoadCheck();
+    })
+    .catch((error) => {
+      console.error("Failed to load auto-load preference:", error);
+      neShowMoreState.autoPreferenceLoaded = true;
+      pauseAutoLoading("Automatic loading preference could not be loaded.");
+    });
 }
