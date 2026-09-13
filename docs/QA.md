@@ -1,20 +1,23 @@
-# QA記録 — v1.16.0
+# QA記録 — v1.16.1
 
-検証日: 2026-09-13。この更新も **Pre-release** とします。
+検証日: 2026-09-14。この更新も **Pre-release** とします。
 
-結果: `npm test` は5件、`npm run test:ui` は14件すべて成功しました（ブラウザ全件実行: 約2.1分）。
+結果: `npm test` は8件、`npm run test:ui` は14件すべて成功しました（ブラウザ全件実行: 約2.0分）。
+
+v1.16.1では `sukebei.nyaa.si` の起動に必要なホスト権限・両方のcontent script・module resourceの指定を検査し、両サイトの検索・ページ遷移・設定画面が元のドメインを保持することを通信なしの単体テストで確認しました。ブラウザテストは引き続きlocalhost上で実行するため、Sukebei実サイト上の起動を直接確認した結果ではありません。
 
 ## 確認環境と範囲
 
 - Windows、Node.js 24、Playwright 1.63.0 の Chromium。
 - 自動ブラウザ検証は、実装したChrome拡張のコピーを一時プロファイルへ読み込み、許可先を `127.0.0.1:4174` だけに置き換えて実施します。機能コードは配布版と同じです。
-- 手動の表示確認はGoogle Chromeの `127.0.0.1:4173`。ページから同じ機能コードを読み込み、Chrome storage/runtime APIだけ検証用スタブを使います。これは通常の拡張インストールの証明とは区別します。
+- v1.16.0の手動表示確認はGoogle Chromeの `127.0.0.1:4173`。ページから同じ機能コードを読み込み、Chrome storage/runtime APIだけ検証用スタブを使いました。v1.16.1は自動ブラウザテストで生成した4画面を目視確認しています。これはユーザーのChromeへの拡張インストールの証明とは区別します。
 - 公開されているNyaaのBootstrap・表用CSSと列構造を使い、架空の日本語タイトルで画面を構成しました。出典とライセンスは [fixture assets](https://github.com/came815/nyaa-enhancer-presets/blob/main/tests/fixtures/site-assets/README.md) にあります。実サイトの内容やユーザーの閲覧画面は同梱しません。
 
 ## 確認項目
 
 | 項目 | 検証方法 |
 | --- | --- |
+| Nyaa / Sukebeiの起動設定 | manifestの4種類のURL指定・JS/CSSファイルの存在・動的moduleへのアクセス許可を確認。両サイトのURLと設定画面のドメイン保持も単体検証 |
 | Day / Week / Month / 3Month / Year | 単体テストで24時間・7/30/90/365日の境界、欠落値、不正値、未来日付を確認 |
 | 初期Monthと固定した検索時刻 | URLの正規化、再読込・追加ページでの同一境界を確認 |
 | シーダー降順 | プリセットとQuick Searchが `s=seeders&o=desc` を指定し、サーバー順の行を保持することを確認 |
@@ -28,6 +31,8 @@
 | 表示 | 1920×1080と390×844、ライト/ダーク、Month/Day選択、Quick Search、長い日本語・英数字のタイトルを確認 |
 
 期間ボタン、既存ツールバー、追加読み込み欄に意図しない重なりや内部の横はみ出しがないことをブラウザの座標・幅でも検査します。長い一覧を実際にスクロールし、期間ボタンと自動取得の操作欄が画面上端に留まることも確認します。狭い画面では操作欄を折り返し、表はNyaa側CSSの省略・折り返し規則を使います。
+
+README・導入ガイド・改変記録・拡張内ChangelogにSukebei対応を反映しました。一覧の配置や操作ラベルは変わらないため、既存の導入用スクリーンショットを継続使用します。
 
 GitHub Actionsは未実行です。公開時の認証に`workflow`権限がないため、CI定義は[導入用テンプレート](https://github.com/came815/nyaa-enhancer-presets/blob/main/docs/verify-workflow.yml)として保存しています。Actionsを設定できる権限で、このファイルを`.github/workflows/verify.yml`へ配置すると利用できます。
 

@@ -25,3 +25,9 @@ The fork also improves narrow-screen toolbar wrapping, adds release attribution 
 - Add sticky date controls, visible loading state, and a remembered auto-loading on/off choice with Pause / Resume controls.
 - Require explicit resume after errors, rate limits, timeouts, or ten pages without visible matches; start no new page requests while the tab is hidden.
 - Extend localhost browser checks and update the usage documentation and screenshots. License and upstream attribution are retained.
+
+## Version 1.16.1 — 2026-09-14
+
+- Enable the Chrome extension on `sukebei.nyaa.si` by adding the exact host to host permissions, both content-script matches, and module resource matches.
+- Retain the current site's origin for presets, navigation, and settings; add offline regression checks for the activation requirements and site routing.
+- Update installation guidance. License and upstream attribution are retained; live-site operation remains unverified.

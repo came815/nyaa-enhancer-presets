@@ -34,6 +34,7 @@ export async function showChangelog() {
         <span class="changelog-version">v${currentVersion}</span>
       </div>
       <div class="changelog-content">
+        • Enable period presets and automatic loading on sukebei.nyaa.si<br>
         • Scroll near the bottom to load more results automatically<br>
         • Sticky period controls with loading status and Pause / Resume<br>
         • Errors and 10 pages without matches pause loading for you to resume
@@ -98,6 +99,13 @@ export async function handleChangelogPage() {
   changelogContent.className = "changelog-page";
   changelogContent.innerHTML = `
     <h1>Nyaa Enhancer Presets Changelog</h1>
+    <section class="version-entry">
+      <h2>Version 1.16.1 — 2026-09-14</h2>
+      <ul>
+        <li>Enable the Chrome extension on sukebei.nyaa.si, including styles and module loading.</li>
+        <li>Keep searches and additional results on the current site's domain.</li>
+      </ul>
+    </section>
     <section class="version-entry">
       <h2>Version 1.16.0 — 2026-09-13</h2>
       <ul>

@@ -2,6 +2,8 @@
 
 [Arad119/Nyaa-Enhancer](https://github.com/Arad119/Nyaa-Enhancer) の Chrome 向け改造版です。投稿日で絞り、シーダーが多い順に結果を見られます。元作者の公式版とは別のプロジェクトです。
 
+`nyaa.si` と `sukebei.nyaa.si` で起動します。検索や追加読み込みは、開いているサイトのドメインを保持します。
+
 | プリセット | 対象期間 |
 | --- | --- |
 | Day | 直近24時間 |
