@@ -1,19 +1,26 @@
 {
   "manifest_version": 3,
-  "name": "Nyaa Enhancer",
-  "version": "1.14.0",
-  "description": "Enhances Nyaa with batch magnet copying, torrent file downloading, and customizable filename options.",
+  "name": "Nyaa Enhancer Presets",
+  "version": "1.15.0",
+  "description": "Nyaa Enhancer fork with Day, Week, Month, 3Month and Year upload filters, persistent searches and incremental results.",
   "background": {
     "service_worker": "background/index.js",
     "type": "module"
   },
-  "permissions": ["clipboardWrite", "storage", "activeTab"],
-  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": [
+    "clipboardWrite",
+    "storage",
+    "activeTab"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
   },
   "host_permissions": [
-    "*://*.nyaa.si/*",
+    "*://nyaa.si/*",
     "*://*.nya.iss.one/*",
     "*://*.nyaa.ink/*",
     "*://*.nyaa.land/*",
@@ -39,7 +46,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.nyaa.si/*",
+        "*://nyaa.si/*",
         "*://*.nya.iss.one/*",
         "*://*.nyaa.ink/*",
         "*://*.nyaa.land/*",
@@ -58,20 +65,25 @@
         "content/styles/quick-search.css",
         "content/styles/highlights.css",
         "content/styles/similar.css",
-        "content/styles/settings.css"
+        "content/styles/settings.css",
+        "content/styles/date-presets.css"
       ],
-      "js": ["assets/jszip.min.js"]
+      "js": [
+        "assets/jszip.min.js"
+      ]
     },
     {
       "matches": [
-        "*://*.nyaa.si/*",
+        "*://nyaa.si/*",
         "*://*.nya.iss.one/*",
         "*://*.nyaa.ink/*",
         "*://*.nyaa.land/*",
         "*://*.nyaa.digital/*",
         "*://*.ny.iss.one/*"
       ],
-      "js": ["content/loader.js"]
+      "js": [
+        "content/loader.js"
+      ]
     }
   ],
   "web_accessible_resources": [
@@ -84,7 +96,7 @@
         "shared/*"
       ],
       "matches": [
-        "*://*.nyaa.si/*",
+        "*://nyaa.si/*",
         "*://*.nya.iss.one/*",
         "*://*.nyaa.ink/*",
         "*://*.nyaa.land/*",
@@ -95,5 +107,6 @@
   ],
   "action": {
     "default_popup": "popup/popup.html"
-  }
+  },
+  "homepage_url": "https://github.com/came815/nyaa-enhancer-presets"
 }

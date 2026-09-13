@@ -1,38 +1,8 @@
+// Nyaa Enhancer Presets modification, 2026-09-13. GPL-3.0.
+import { DATE_PRESETS, normalizeDatePreset, readDatePresetOptions, isWithinDatePreset, buildPresetUrl } from "../../../shared/date-presets.js";
+import { updateShowMoreButtonState } from "../show-more/index.js";
 import { getPreferences, loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
 import { convertToBytes, fetchJsonViaBackground, formatNekoBTBytes, isNyaaTorrentDataRow, showNotification, syncSelectionToVisibleRows } from "../../internal.js";
-
-// Function to filter torrents by last 30 days
-export function filterByLast30Days() {
-  const rows = document.querySelectorAll("table.torrent-list tbody tr");
-  const now = Date.now() / 1000; // Current time in seconds (Unix timestamp)
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60; // 30 days in seconds
-  let hiddenCount = 0;
-  let visibleCount = 0;
-
-  rows.forEach((row) => {
-    // Find the date cell with data-timestamp attribute
-    const dateCell = row.querySelector("td[data-timestamp]");
-
-    if (dateCell) {
-      const timestamp = parseInt(dateCell.getAttribute("data-timestamp"), 10);
-
-      // Hide rows older than 30 days
-      if (timestamp < thirtyDaysAgo) {
-        row.style.display = "none";
-        hiddenCount++;
-      } else {
-        row.style.display = "";
-        visibleCount++;
-      }
-    }
-  });
-
-  showNotification(
-    `Showing ${visibleCount} torrents from the last 30 days (${hiddenCount} hidden)`,
-    true,
-  );
-  syncSelectionToVisibleRows();
-}
 
 export const QS_FILE_SIZE_SLIDER_MAX_MB = 51200;
 export const QS_FILE_SIZE_ABSOLUTE_MAX_BYTES = QS_FILE_SIZE_SLIDER_MAX_MB * 1024 * 1024;
@@ -234,15 +204,13 @@ export function initQuickSearchFileSizeControls() {
 
 export function getQuickSearchClientFilterOptions() {
   const urlParams = new URLSearchParams(window.location.search);
-  const last30Days = urlParams.get("dateFilter") === "30days";
+  const period = readDatePresetOptions(window.location.href);
   const sizeMinParam = urlParams.get("sizeMin");
   const sizeMaxParam = urlParams.get("sizeMax");
   const sizeEnabled = sizeMinParam !== null && sizeMaxParam !== null;
 
-  if (!last30Days && !sizeEnabled) return null;
-
   return {
-    last30Days,
+    ...period,
     sizeEnabled,
     sizeMin: sizeEnabled ? parseInt(sizeMinParam, 10) : 0,
     sizeMax: sizeEnabled
@@ -254,13 +222,9 @@ export function getQuickSearchClientFilterOptions() {
 export function shouldHideRowByQuickSearch(row, options) {
   if (!options) return false;
 
-  if (options.last30Days) {
-    const dateCell = row.querySelector("td[data-timestamp]");
-    if (dateCell) {
-      const timestamp = parseInt(dateCell.getAttribute("data-timestamp"), 10);
-      const thirtyDaysAgo = Date.now() / 1000 - 30 * 24 * 60 * 60;
-      if (timestamp < thirtyDaysAgo) return true;
-    }
+  if (options.datePreset) {
+    const value = row.querySelector("td[data-timestamp]")?.getAttribute("data-timestamp");
+    if (!isWithinDatePreset(value ? Number(value) : NaN, options)) return true;
   }
 
   if (options.sizeEnabled) {
@@ -299,7 +263,7 @@ export function applyQuickSearchClientFilters(options) {
     visibleCount++;
   });
 
-  if (options.last30Days) filterParts.push("last 30 days");
+  if (options.datePreset) filterParts.push(DATE_PRESETS.find((entry) => entry.key === options.datePreset)?.label || "Month");
   if (options.sizeEnabled) {
     filterParts.push(
       `size ${formatNekoBTBytes(options.sizeMin)} – ${formatNekoBTBytes(options.sizeMax)}`,
@@ -315,6 +279,7 @@ export function applyQuickSearchClientFilters(options) {
     true,
   );
   syncSelectionToVisibleRows();
+  updateShowMoreButtonState();
 }
 
 export const XEM_ALL_NAMES_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -895,7 +860,7 @@ export function getDefaultQuickSearchState() {
     category: "0",
     dualAudio: false,
     seasonPack: false,
-    last30Days: false,
+    datePreset: "month",
     fileSizeEnabled: false,
     fileSizeMinBytes: 0,
     fileSizeMaxBytes: QS_FILE_SIZE_ABSOLUTE_MAX_BYTES,
@@ -915,7 +880,7 @@ export function readQuickSearchFormState() {
     category: document.getElementById("category")?.value || "0",
     dualAudio: document.getElementById("dual-audio")?.checked || false,
     seasonPack: document.getElementById("season-pack")?.checked || false,
-    last30Days: document.getElementById("last-30-days")?.checked || false,
+    datePreset: document.getElementById("qs-date-preset")?.value || "month",
     fileSizeEnabled:
       document.getElementById("qs-file-size-enabled")?.checked || false,
     fileSizeMinBytes: sizeBounds.min,
@@ -938,7 +903,7 @@ export function applyQuickSearchFormState(state) {
   document.getElementById("category").value = merged.category;
   document.getElementById("dual-audio").checked = merged.dualAudio;
   document.getElementById("season-pack").checked = merged.seasonPack;
-  document.getElementById("last-30-days").checked = merged.last30Days;
+  document.getElementById("qs-date-preset").value = normalizeDatePreset(merged.datePreset);
   document.getElementById("qs-file-size-enabled").checked =
     merged.fileSizeEnabled;
   document.getElementById("qs-file-size-section").hidden =
@@ -1099,9 +1064,11 @@ export function showQuickFilterPopup(options = {}) {
           <input type="checkbox" id="season-pack">
           <span>Season Pack</span>
         </label>
-        <label class="qf-checkbox">
-          <input type="checkbox" id="last-30-days">
-          <span>Last 30 Days</span>
+        <label class="qf-date-preset" for="qs-date-preset">
+          Uploaded within
+          <select id="qs-date-preset">
+            ${DATE_PRESETS.map((preset) => `<option value="${preset.key}">${preset.label}</option>`).join("")}
+          </select>
         </label>
         <label class="qf-checkbox">
           <input type="checkbox" id="qs-file-size-enabled">
@@ -1181,6 +1148,7 @@ export function showQuickFilterPopup(options = {}) {
     const formState = rememberSelection
       ? { ...state }
       : getDefaultQuickSearchState();
+    formState.datePreset = readDatePresetOptions(window.location.href).datePreset;
     const animeName = String(options.animeName || "").trim();
     if (animeName) formState.animeName = animeName;
     applyQuickSearchFormState(formState);
@@ -1236,7 +1204,7 @@ export function showQuickFilterPopup(options = {}) {
       document.getElementById("category").value !== "0" ||
       document.getElementById("dual-audio").checked ||
       document.getElementById("season-pack").checked ||
-      document.getElementById("last-30-days").checked ||
+      document.getElementById("qs-date-preset").value !== "month" ||
       fileSizeActive
     );
   };
@@ -1252,7 +1220,7 @@ export function showQuickFilterPopup(options = {}) {
       document.getElementById("category").value = "0";
       document.getElementById("dual-audio").checked = false;
       document.getElementById("season-pack").checked = false;
-      document.getElementById("last-30-days").checked = false;
+      document.getElementById("qs-date-preset").value = "month";
       resetQuickSearchFileSizeControls();
       if (rememberSelectionCheckbox.checked) {
         await clearQuickSearchState();
@@ -1274,7 +1242,7 @@ export function showQuickFilterPopup(options = {}) {
     const source = document.getElementById("source").value;
     const dualAudio = document.getElementById("dual-audio").checked;
     const seasonPack = document.getElementById("season-pack").checked;
-    const last30Days = document.getElementById("last-30-days").checked;
+    const datePreset = document.getElementById("qs-date-preset").value;
     const fileSizeEnabled = document.getElementById("qs-file-size-enabled")
       .checked;
     const sizeBounds = readQuickSearchFileSizeBounds();
@@ -1302,7 +1270,7 @@ export function showQuickFilterPopup(options = {}) {
       seasonPack ||
       category !== "0";
 
-    const hasClientFilters = last30Days || fileSizeActive;
+    const hasClientFilters = !!datePreset || fileSizeActive;
     const hasAnyFilters = hasSearchFilters || hasClientFilters;
 
     if (!hasAnyFilters) {
@@ -1317,31 +1285,20 @@ export function showQuickFilterPopup(options = {}) {
       await saveQuickSearchState(readQuickSearchFormState());
     }
 
-    if (!hasSearchFilters && hasClientFilters) {
-      closePopup();
-      applyQuickSearchClientFilters({
-        last30Days,
-        sizeEnabled: fileSizeActive,
-        sizeMin: sizeBounds.min,
-        sizeMax: sizeBounds.max,
-      });
-      return;
-    }
-
-    const searchQuery = searchParams.join(" ");
-    const categoryParam = category === "0" ? "0_0" : `1_${category}`;
-    let targetUrl = `${
-      window.location.origin
-    }/?f=0&c=${categoryParam}&q=${encodeURIComponent(searchQuery)}`;
-
-    if (last30Days) {
-      targetUrl += "&dateFilter=30days";
+    const targetUrl = buildPresetUrl(window.location.href, datePreset);
+    // A date/size-only change keeps the current keyword, category and user scope.
+    if (hasSearchFilters) {
+      targetUrl.searchParams.set("q", searchParams.join(" "));
+      targetUrl.searchParams.set("c", category === "0" ? "0_0" : `1_${category}`);
     }
     if (fileSizeActive) {
-      targetUrl += `&sizeMin=${sizeBounds.min}&sizeMax=${sizeBounds.max}`;
+      targetUrl.searchParams.set("sizeMin", String(sizeBounds.min));
+      targetUrl.searchParams.set("sizeMax", String(sizeBounds.max));
+    } else {
+      targetUrl.searchParams.delete("sizeMin");
+      targetUrl.searchParams.delete("sizeMax");
     }
-
-    window.location.href = targetUrl;
+    window.location.href = targetUrl.href;
   });
 
   const closePopup = () => {
@@ -1373,6 +1330,7 @@ export function showQuickFilterPopup(options = {}) {
 }
 
 export function checkAndApplyQuickSearchFilters() {
+  if (!document.querySelector("table.torrent-list tbody")) return;
   const options = getQuickSearchClientFilterOptions();
   if (!options) return;
 

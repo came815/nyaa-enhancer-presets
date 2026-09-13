@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.zip binary
+*.woff2 binary
+# Preserve upstream bytes and intentional Markdown line breaks in copied sources.
+docs/UPSTREAM-README.md whitespace=-blank-at-eol
+tests/fixtures/site-assets/css/main.css whitespace=-blank-at-eol
+vendor-sources/jszip-3.10.1/lib/stream/DataLengthProbe.js whitespace=-blank-at-eof

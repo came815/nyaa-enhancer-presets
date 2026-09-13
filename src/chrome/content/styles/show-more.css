@@ -2,8 +2,31 @@
 
 .ne-show-more {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
   justify-content: center;
   margin: 12px 0 16px;
+}
+
+.ne-show-more__status {
+  margin: 0;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+body.dark .ne-show-more__status {
+  color: #b8b8b8;
+}
+
+.ne-show-more__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 460px);
 }
 
 .ne-show-more__button {
@@ -50,6 +73,32 @@
   font-size: 14px;
 }
 
+.ne-show-more__cancel {
+  padding: 9px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ne-show-more__cancel:hover,
+.ne-show-more__cancel:focus-visible {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+body.dark .ne-show-more__cancel {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+body.dark .ne-show-more__cancel:hover,
+body.dark .ne-show-more__cancel:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 @keyframes ne-show-more-row-in {
   from {
     opacity: 0;
@@ -75,8 +124,24 @@ table.torrent-list tbody tr.ne-show-more-row-enter {
   }
 
   .ne-show-more__button {
-    width: 100%;
+    flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .ne-show-more__controls {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .ne-show-more__controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ne-show-more__button,
+  .ne-show-more__cancel {
+    width: 100%;
   }
 }
 

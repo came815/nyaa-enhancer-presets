@@ -1,0 +1,25 @@
+/* Nyaa Enhancer Presets modification, 2026-09-13. GPL-3.0. */
+.ne-date-presets { display:flex; align-items:center; flex-wrap:wrap; gap:10px 14px; margin:0 0 12px; padding:12px 0; color:#2c3e50; font:14px/1.5 "Segoe UI",sans-serif; }
+body.dark .ne-date-presets { color:#e0e0e0; }
+.ne-date-presets__label { font-weight:600; }
+.ne-date-presets__choices { display:flex; flex-wrap:wrap; gap:6px; }
+.ne-date-presets button { min-height:36px; padding:6px 14px; border:1px solid #b8c4d0; border-radius:4px; background:#fff; color:#2c3e50; font:inherit; cursor:pointer; }
+.ne-date-presets button:hover { background:#eef3f8; }
+.ne-date-presets button[aria-pressed="true"] { background:#337ab7; border-color:#337ab7; color:#fff; font-weight:600; }
+.ne-date-presets button:focus-visible { outline:3px solid #66afe9; outline-offset:2px; }
+body.dark .ne-date-presets button { background:#2b2b2b; color:#e0e0e0; border-color:#666; }
+body.dark .ne-date-presets button[aria-pressed="true"] { background:#337ab7; border-color:#66afe9; color:#fff; }
+.ne-date-presets__note { flex-basis:100%; font-size:13px; color:#5c6b78; overflow-wrap:anywhere; }
+body.dark .ne-date-presets__note { color:#bdc7d0; }
+@media (max-width:600px) { .ne-date-presets { gap:10px; } .ne-date-presets__label { flex-basis:100%; } .ne-date-presets button { min-height:40px; padding:7px 12px; } }
+.qf-date-preset { display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-weight:500; }
+.qf-date-preset select { min-height:36px; padding:6px 10px; border:1px solid #b8c4d0; border-radius:4px; font:inherit; color:inherit; background:inherit; }
+.qf-date-preset select:focus-visible { outline:3px solid #66afe9; outline-offset:2px; }
+/* Keep the inherited toolbar usable alongside the presets on narrow displays. */
+.nyaa-enhancer-toolbar, .nyaa-enhancer-toolbar * { box-sizing:border-box; }
+@media (max-width:600px) {
+  .button-container.nyaa-enhancer-toolbar { flex-direction:column; align-items:stretch; }
+  .nyaa-enhancer-toolbar__aside { margin-left:0; width:100%; }
+  .nyaa-enhancer-toolbar__main, .nyaa-enhancer-toolbar__group { max-width:100%; flex-wrap:wrap; }
+  .nyaa-enhancer-toolbar__aside .quick-filter-button .ne-btn-label { display:inline; }
+}

@@ -1,4 +1,5 @@
 import { loadStoredPreferences, savePreferences } from "../../../shared/prefs.js";
+import { updateShowMoreButtonState } from "../show-more/index.js";
 import { failsCompletedDownloadsFilter, getCompletedDownloadsFromRow, getQuickSearchClientFilterOptions, getTitleFromRow, handleSettingChange, isNyaaTorrentDataRow, isNyaaTorrentListPage, shouldHideRowByQuickSearch, showNotification, syncSelectionToVisibleRows, updateTorrentRowLinkActions } from "../../internal.js";
 
 // Function to hide dead torrents
@@ -215,6 +216,7 @@ export async function applyAllTorrentFilters({ notify = false } = {}) {
   }
 
   syncSelectionToVisibleRows();
+  updateShowMoreButtonState();
   return { newlyHidden, totalHidden };
 }
 

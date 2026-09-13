@@ -1,0 +1,16 @@
+{
+  "name": "nyaa-enhancer-presets",
+  "version": "1.15.0",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0",
+  "scripts": {
+    "test": "node --test tests/unit/*.test.js",
+    "test:ui": "playwright test",
+    "package": "node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "jszip": "3.10.1"
+  }
+}

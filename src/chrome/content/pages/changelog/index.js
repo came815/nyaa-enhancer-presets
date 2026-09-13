@@ -34,9 +34,9 @@ export async function showChangelog() {
         <span class="changelog-version">v${currentVersion}</span>
       </div>
       <div class="changelog-content">
-        • Added Similar Anime tab on torrent view pages: related, recommended, and same-vibe titles<br>
-        • Added a minimum seeders filter in the Filters panel<br>
-        • Added click-to-copy for the torrent title and info hash on view pages
+        • Nyaa Enhancer Presets: Day / Week / Month / 3Month / Year<br>
+        • Period and seeder order persist across searches and navigation<br>
+        • Show more supports Cancel, resume and bounded page loading
         <div class="changelog-more">Plus more. <a href="/changelog">See the full changelog</a> for everything that's new.</div>
       </div>
       <div class="changelog-actions">
@@ -97,7 +97,14 @@ export async function handleChangelogPage() {
   const changelogContent = document.createElement("div");
   changelogContent.className = "changelog-page";
   changelogContent.innerHTML = `
-    <h1>Nyaa Enhancer Changelog</h1>
+    <h1>Nyaa Enhancer Presets Changelog</h1>
+    <div class="version-entry">
+      <h2>Version 1.15.0 — 2026-09-13</h2>
+      <p>Independent GPL v3 fork by came815, based on Nyaa Enhancer by Arad119.</p>
+      <p>Added five rolling upload presets, persistent search conditions, and cancellable incremental loading.</p>
+      <p><a href="https://github.com/came815/nyaa-enhancer-presets">Source and modifications</a> ·
+      <a href="https://github.com/came815/nyaa-enhancer-presets/blob/main/LICENSE.txt">GPL v3 license</a>. No warranty.</p>
+    </div>
     <div class="changelog-repo">
       <p>This is an open source project. View the source code and contribute on 
         <a href="https://github.com/Arad119/Nyaa-Enhancer" target="_blank" class="repo-link">

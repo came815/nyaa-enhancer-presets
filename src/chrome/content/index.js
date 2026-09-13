@@ -6,6 +6,7 @@ import { showNotification } from "./core/notifications.js";
 import { observeTableChanges } from "./core/observer.js";
 import { setFeatures } from "./core/registry.js";
 import { features } from "./features/index.js";
+import { initializeDatePresets } from "./features/date-presets/index.js";
 
 setPrefsSaveErrorHandler((message) => {
   showNotification(`Failed to save settings: ${message}`, false);
@@ -15,6 +16,7 @@ setFeatures(features);
 const ctx = buildCtx(features);
 
 async function initializeExtension(isInitialLoad = false) {
+  if (!initializeDatePresets()) return;
   ctx.isInitialLoad = isInitialLoad;
   for (const feature of features) {
     await feature.init?.(ctx);

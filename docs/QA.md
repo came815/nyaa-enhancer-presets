@@ -1,0 +1,59 @@
+# QA記録 — v1.15.0
+
+検証日: 2026-09-13。初回公開は **Pre-release** とします。
+
+結果: `npm test` は5件、`npm run test:ui` は6件すべて成功しました。
+
+## 確認環境と範囲
+
+- Windows、Node.js 24、Playwright 1.63.0 の Chromium。
+- 自動ブラウザ検証は、実装したChrome拡張のコピーを一時プロファイルへ読み込み、許可先を `127.0.0.1:4174` だけに置き換えて実施します。機能コードは配布版と同じです。
+- 手動の表示確認はGoogle Chromeの `127.0.0.1:4173`。ページから同じ機能コードを読み込み、Chrome storage/runtime APIだけ検証用スタブを使います。これは通常の拡張インストールの証明とは区別します。
+- 公開されているNyaaのBootstrap・表用CSSと列構造を使い、架空の日本語タイトルで画面を構成しました。出典とライセンスは [fixture assets](https://github.com/came815/nyaa-enhancer-presets/blob/main/tests/fixtures/site-assets/README.md) にあります。実サイトの内容やユーザーの閲覧画面は同梱しません。
+
+## 確認項目
+
+| 項目 | 検証方法 |
+| --- | --- |
+| Day / Week / Month / 3Month / Year | 単体テストで24時間・7/30/90/365日の境界、欠落値、不正値、未来日付を確認 |
+| 初期Monthと固定した検索時刻 | URLの正規化、再読込・追加ページでの同一境界を確認 |
+| シーダー降順 | プリセットとQuick Searchが `s=seeders&o=desc` を指定し、サーバー順の行を保持することを確認 |
+| 検索条件の保持 | 通常のGET検索・カテゴリ・Quick Search・日付ソート・ページリンクで期間条件と検索語を確認 |
+| Show more | 期間外ページのスキップ、ID重複排除、1.5秒以上の取得間隔、空の最終ページを確認 |
+| 上限・中断・失敗 | 1回10ページの上限と続行、Cancelと同じ次ページからの再開、429の秒/HTTP-date形式Retry-After、不正HTMLを確認 |
+| 既存の絞り込みとの併用 | 最小シーダー数・サイズ・日付を実際の列位置で同時に判定 |
+| 表示 | 1920×1080と390×844、ライト/ダーク、Month/Day選択、Quick Search、長い日本語・英数字のタイトルを確認 |
+
+新しい期間ボタン、既存ツールバー、追加読み込み欄に重なりや内部の横はみ出しがないことをブラウザの座標・幅でも検査します。狭い画面の既存ツールバーは折り返し、表はNyaa側CSSの省略・折り返し規則を使います。
+
+GitHub Actionsは未実行です。公開時の認証に`workflow`権限がないため、CI定義は[導入用テンプレート](https://github.com/came815/nyaa-enhancer-presets/blob/main/docs/verify-workflow.yml)として保存しています。Actionsを設定できる権限で、このファイルを`.github/workflows/verify.yml`へ配置すると利用できます。
+
+## 再実行
+
+```text
+npm ci --ignore-scripts
+npm test
+npx playwright install chromium
+npm run test:ui
+```
+
+手動表示確認:
+
+```text
+node scripts/preview.mjs
+```
+
+表示用URL: `http://127.0.0.1:4173/?s=seeders&o=desc&c=3_3&fixture=visual`。
+サーバーはループバック専用で、外部サイトの代理取得機能を持ちません。画像は自動テストの `test-results/` に生成されます。
+
+## 未検証と制限
+
+- 実サイトへのブラウザ操作は実行環境の自動安全判定で拒否されました。実サイトへの直接操作、現在の本番HTMLとの完全一致、他のインストール済み拡張との共存は未検証です。ローカル検証を実サイト検証の代用証明とはしていません。
+- ダウンロード、外部Torrentクライアントへの送信、外部メタデータAPIなど、元版の外部連携は今回実行していません。
+- ユーザーのChromeプロファイルへの改造版インストール、Firefox、ミラーサイトは未検証です。
+- 読み込み済み結果に対する絞り込みです。期間内の全件取得や、変動するシーダー数を厳密な同一時刻で比較したランキングを保証しません。
+- 検索開始時刻はURLに保持されます。ページ読み込み後の時間経過だけでは自動で更新されません。Refreshまたはプリセット再選択で更新してください。
+
+## 配布物の検証
+
+コミット済みツリーから `npm run package` で作成します。Chrome ZIPのルートmanifest・ライセンス・改変記録・第三者通知・SOURCE.txt、および同じコミットの対応ソースZIPを検査し、SHA256SUMS.txtと一緒に同じGitHub Releaseへ公開します。
